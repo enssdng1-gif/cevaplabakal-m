@@ -215,17 +215,31 @@
       </div>
 
       <div class="repost-photo-card">
-        <div class="repost-photo-wrapper">
-          <span class="repost-photo-num" id="repost-photo-badge">#1</span>
-          <img id="repost-photo-img" src="" alt="Repost Photo">
+        <div class="repost-flip-container" id="repost-flip-container">
+          <div class="repost-flip-inner" id="repost-flip-inner">
+            <div class="repost-flip-front">
+              <span class="repost-photo-num" id="repost-photo-badge-front">#1</span>
+              <div class="repost-flip-content">
+                <span class="flip-icon">🔄</span>
+                <p>Fotoğrafı görmek için tıkla!</p>
+              </div>
+            </div>
+            <div class="repost-flip-back">
+              <div class="repost-photo-wrapper">
+                <span class="repost-photo-num" id="repost-photo-badge">#1</span>
+                <img id="repost-photo-img" src="" alt="Repost Photo">
+              </div>
+            </div>
+          </div>
         </div>
         
-        <div class="repost-answer-area">
-          <input type="text" id="repost-answer-input" placeholder="Kim bu? İsmini yaz..." autocomplete="off">
-          <button id="repost-submit-btn" class="btn btn-primary">Cevapla</button>
+        <div class="repost-answer-section hidden" id="repost-answer-section">
+          <div class="repost-answer-area">
+            <input type="text" id="repost-answer-input" placeholder="Kim bu? İsmini yaz..." autocomplete="off">
+            <button id="repost-submit-btn" class="btn btn-primary">Cevapla</button>
+          </div>
+          <div id="repost-feedback" class="repost-feedback hidden"></div>
         </div>
-        
-        <div id="repost-feedback" class="repost-feedback hidden"></div>
         
         <div class="repost-nav-buttons hidden" id="repost-nav-buttons">
           <button id="repost-next-btn" class="btn btn-blue btn-full">Sıradaki Fotoğraf →</button>

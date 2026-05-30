@@ -103,7 +103,11 @@ const repostTotalNum = document.getElementById('repost-total-num');
 const repostProgressFill = document.getElementById('repost-progress-fill');
 const repostCurrentScore = document.getElementById('repost-current-score');
 const repostPhotoBadge = document.getElementById('repost-photo-badge');
+const repostPhotoBadgeFront = document.getElementById('repost-photo-badge-front');
 const repostPhotoImg = document.getElementById('repost-photo-img');
+const repostFlipContainer = document.getElementById('repost-flip-container');
+const repostFlipInner = document.getElementById('repost-flip-inner');
+const repostAnswerSection = document.getElementById('repost-answer-section');
 const repostAnswerInput = document.getElementById('repost-answer-input');
 const repostSubmitBtn = document.getElementById('repost-submit-btn');
 const repostFeedback = document.getElementById('repost-feedback');
@@ -525,16 +529,28 @@ function showRepostPhoto() {
   repostCurrentNum.textContent = currentPhotoIndex + 1;
   repostProgressFill.style.width = `${((currentPhotoIndex) / repostPhotos.length) * 100}%`;
   repostPhotoBadge.textContent = `#${currentPhotoIndex + 1}`;
+  repostPhotoBadgeFront.textContent = `#${currentPhotoIndex + 1}`;
   repostPhotoImg.src = `/photos/${p.file}`;
+  
+  repostFlipInner.classList.remove('flipped');
+  repostAnswerSection.classList.add('hidden');
   
   repostAnswerInput.value = '';
   repostAnswerInput.disabled = false;
   repostSubmitBtn.disabled = false;
   repostFeedback.classList.add('hidden');
   repostNavButtons.classList.add('hidden');
-  
-  setTimeout(() => repostAnswerInput.focus(), 100);
 }
+
+repostFlipContainer.addEventListener('click', () => {
+  if (!repostFlipInner.classList.contains('flipped')) {
+    repostFlipInner.classList.add('flipped');
+    setTimeout(() => {
+      repostAnswerSection.classList.remove('hidden');
+      repostAnswerInput.focus();
+    }, 300);
+  }
+});
 
 repostSubmitBtn.addEventListener('click', submitRepostAnswer);
 repostAnswerInput.addEventListener('keypress', (e) => {
