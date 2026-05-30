@@ -137,6 +137,15 @@
 
       <div id="lobby-players" class="players-list"></div>
 
+      <!-- Lobi Chat -->
+      <div class="chat-container">
+        <div class="chat-messages" id="lobby-chat-messages"></div>
+        <div class="chat-input-area">
+          <input type="text" id="lobby-chat-input" placeholder="Sohbet et..." autocomplete="off">
+          <button id="lobby-chat-send-btn" class="btn btn-primary btn-small">Gönder</button>
+        </div>
+      </div>
+
       <button id="lobby-start-btn" class="btn btn-primary btn-full hidden">🎮 Oyunu Başlat</button>
     </div>
   </div>
@@ -186,6 +195,17 @@
       <h2>📊 Sonuçlar</h2>
       <div id="results-status" class="results-status"></div>
       <div id="results-list" class="results-list"></div>
+      
+      <!-- Sonuçlar Chat -->
+      <div class="chat-container">
+        <div class="chat-messages" id="results-chat-messages"></div>
+        <div class="chat-input-area">
+          <input type="text" id="results-chat-input" placeholder="Sohbet et..." autocomplete="off">
+          <button id="results-chat-send-btn" class="btn btn-primary btn-small">Gönder</button>
+        </div>
+      </div>
+
+      <button id="restart-game-btn" class="btn btn-green btn-full hidden" style="margin-bottom: 10px;">🔄 Yeni Oyun Başlat</button>
       <button id="results-back-btn" class="btn btn-primary btn-full">Ana Menüye Dön</button>
     </div>
 

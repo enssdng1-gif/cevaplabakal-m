@@ -9,85 +9,66 @@ const io = new Server(server);
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
-// Sorular
-const questions = [
-  { id: 1, question: "Görelilik teorisini geliştiren fizikçi kimdir?", answer: "Albert Einstein" },
-  { id: 2, question: "Mona Lisa tablosunu yapan ressam kimdir?", answer: "Leonardo da Vinci" },
-  { id: 3, question: "Ay'a ilk ayak basan astronot kimdir?", answer: "Neil Armstrong" },
-  { id: 4, question: "Microsoft'un kurucusu kimdir?", answer: "Bill Gates" },
-  { id: 5, question: "Osmanlı İmparatorluğu'nun kurucusu kimdir?", answer: "Osman Bey" },
-  { id: 6, question: "Türkiye Cumhuriyeti'nin kurucusu kimdir?", answer: "Mustafa Kemal Atatürk" },
-  { id: 7, question: "Telefonu icat eden kişi kimdir?", answer: "Alexander Graham Bell" },
-  { id: 8, question: "Kütle çekim kanununu keşfeden bilim insanı kimdir?", answer: "Isaac Newton" },
-  { id: 9, question: "Ampulü icat eden mucit kimdir?", answer: "Thomas Edison" },
-  { id: 10, question: "Facebook'un kurucusu kimdir?", answer: "Mark Zuckerberg" },
-  { id: 11, question: "Psikanalizin kurucusu olan bilim insanı kimdir?", answer: "Sigmund Freud" },
-  { id: 12, question: "Evrim teorisini ortaya atan bilim insanı kimdir?", answer: "Charles Darwin" },
-  { id: 13, question: "Tesla Motors ve SpaceX'in kurucusu kimdir?", answer: "Elon Musk" },
-  { id: 14, question: "Apple şirketinin kurucusu kimdir?", answer: "Steve Jobs" },
-  { id: 15, question: "Penisilin'i keşfeden bilim insanı kimdir?", answer: "Alexander Fleming" },
-  { id: 16, question: "Amazon şirketinin kurucusu kimdir?", answer: "Jeff Bezos" },
-  { id: 17, question: "Belirsizlik ilkesini ortaya atan fizikçi kimdir?", answer: "Werner Heisenberg" },
-  { id: 18, question: "Radyoaktiviteyi keşfeden kadın bilim insanı kimdir?", answer: "Marie Curie" },
-  { id: 19, question: "Sistine Şapeli'nin tavanını boyayan sanatçı kimdir?", answer: "Michelangelo" },
-  { id: 20, question: "İstanbul'u fetheden Osmanlı padişahı kimdir?", answer: "Fatih Sultan Mehmet" }
+// Sorular havuzu
+const questionsRound1 = [
+  { id: 1, question: "Film olsa kimi başrol yaparsınız?", answer: "" },
+  { id: 2, question: "İstediğin zaman birini susturma özelliğin olsa kimde kullanırdın?", answer: "" },
+  { id: 3, question: "Kim yapay zekayla evlenme kapasitesine sahip?", answer: "" },
+  { id: 4, question: "Kimin eşi evlendiği gün boşanma davası açar?", answer: "" },
+  { id: 5, question: "Kim çiçek yerine kaktüs alır?", answer: "" },
+  { id: 6, question: "Kim yoklukta gider?", answer: "" },
+  { id: 7, question: "Kim evde kalır?", answer: "" },
+  { id: 8, question: "Kimin fetöyle bağlantısı olduğunu düşünüyorsun?", answer: "" },
+  { id: 9, question: "Kim evrimini tamamlayamamıştır?", answer: "" },
+  { id: 10, question: "18'de karıya/kocaya kim kaçar?", answer: "" },
+  { id: 11, question: "En azgın kim?", answer: "" },
+  { id: 12, question: "LGBT üyesi olmaya en yakın kim?", answer: "" },
+  { id: 13, question: "Sizden sır sakladığını düşündüğünüz kişi kim?", answer: "" },
+  { id: 14, question: "Sizden hoşlandığını düşündüğünüz kişi kim?", answer: "" },
+  { id: 15, question: "Kim İstiklal Marşı'nı ezbere bilmiyordur?", answer: "" },
+  { id: 16, question: "Kiminle yalnız kalmaktan korkarsın?", answer: "" },
+  { id: 17, question: "Grupta en çok sevilen kişi kim?", answer: "" },
+  { id: 18, question: "Cehenneme garanti gider dediğiniz kim?", answer: "" },
+  { id: 19, question: "En hiperaktif olan kim?", answer: "" },
+  { id: 20, question: "Rahat duramayan, garip hareketleri olan kim?", answer: "" }
 ];
+
+const questionsRound2 = [
+  { id: 21, question: "Kim kendini acındırır?", answer: "" },
+  { id: 22, question: "Kendini en çok öven kim?", answer: "" },
+  { id: 23, question: "Para karşılığında meydanda kim çıplak koşar?", answer: "" },
+  { id: 24, question: "En zorba kim?", answer: "" },
+  { id: 25, question: "Gereksiz yere tartışma çıkarma potansiyeline sahip kim?", answer: "" },
+  { id: 26, question: "Ağzı en iyi laf yapan kim?", answer: "" },
+  { id: 27, question: "İntihar etmeye en yakın kim?", answer: "" },
+  { id: 28, question: "En keko kim?", answer: "" },
+  { id: 29, question: "Sevgilisini ilk kim aldatır?", answer: "" },
+  { id: 30, question: "Hemcinsiyle sevgili olma potansiyeline sahip kim?", answer: "" },
+  { id: 31, question: "Karşı cinsle iletişimi en kötü olan kim?", answer: "" },
+  { id: 32, question: "Eğlence anlayışı en garip olan kişi kim?", answer: "" },
+  { id: 33, question: "En ciddi kim?", answer: "" },
+  { id: 34, question: "En rahat kim?", answer: "" },
+  { id: 35, question: "En boş konuşan kim?", answer: "" },
+  { id: 36, question: "Adaya düşsen yanına en son kimi alırdın?", answer: "" },
+  { id: 37, question: "Kendi rahatlığı için kim herkesi satar?", answer: "" },
+  { id: 38, question: "Kimin senden gizlice nefret ettiğini düşünüyorsun?", answer: "" },
+  { id: 39, question: "Kimi tanımamak istersin?", answer: "" },
+  { id: 40, question: "Herkesi yalayan, herkese yalakalık yapan kim?", answer: "" }
+];
+
+function getQuestions(round) {
+  if (round === 2) {
+    return questionsRound2;
+  }
+  return questionsRound1;
+}
 
 // Oda yönetimi
 const rooms = new Map();
 
-// Groq API ile cevap doğrulama
+// Groq API ile cevap doğrulama (İptal edildi, arkadaşlar arası olduğu için sadece basit doğrulama)
 async function validateAnswer(answer, playerName) {
-  try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'llama3-8b-8192',
-        messages: [
-          {
-            role: 'system',
-            content: `Sen bir soru-cevap oyunu için cevap doğrulayıcısısın. Görevin, verilen cevabın geçerli bir kişi ismi olup olmadığını kontrol etmek. 
-KURALLAR:
-1. Cevap gerçek bir kişi ismi olmalıdır (ünlü veya tarihi bir kişi)
-2. Cevap oyuncunun kendi ismi OLMAMALIDIR
-3. "bilmiyorum", "bilmem", "hiç kimse", "yok", "pas", "geç" gibi kaçamak cevaplar KABUL EDİLMEZ
-4. Rastgele harfler, sayılar veya anlamsız metinler KABUL EDİLMEZ
-5. Küfür veya uygunsuz içerik KABUL EDİLMEZ
-SADECE JSON formatında yanıt ver: {"valid": true} veya {"valid": false, "reason": "kısa açıklama"}`
-          },
-          {
-            role: 'user',
-            content: `Oyuncu ismi: "${playerName}". Verilen cevap: "${answer}". Bu cevap geçerli mi?`
-          }
-        ],
-        temperature: 0,
-        max_tokens: 80
-      })
-    });
-
-    const data = await response.json();
-    const content = data.choices[0].message.content.trim();
-    
-    // JSON parse et
-    try {
-      const result = JSON.parse(content);
-      return result;
-    } catch {
-      // JSON parse edilemezse, basit kontrol yap
-      if (content.toLowerCase().includes('"valid": true') || content.toLowerCase().includes('"valid":true')) {
-        return { valid: true };
-      }
-      return { valid: false, reason: 'Geçersiz cevap formatı' };
-    }
-  } catch (error) {
-    console.error('Groq API hatası:', error);
-    // API hatası durumunda basit doğrulama
-    return basicValidation(answer, playerName);
-  }
+  return basicValidation(answer, playerName);
 }
 
 // Yedek basit doğrulama
@@ -130,12 +111,14 @@ io.on('connection', (socket) => {
       password: data.password || null,
       hasPassword: !!data.password,
       gameType: data.gameType || 'quiz',
+      round: 1,
       owner: { id: socket.id, name: playerName },
       players: [{ id: socket.id, name: playerName }],
       maxPlayers: 15,
       status: 'waiting',
       playerAnswers: {},
       finishedPlayers: [],
+      gameQuestions: [],
       createdAt: Date.now()
     };
 
@@ -221,6 +204,7 @@ io.on('connection', (socket) => {
     room.status = 'playing';
     room.playerAnswers = {};
     room.finishedPlayers = [];
+    room.gameQuestions = getQuestions(room.round);
 
     // Her oyuncu için boş cevap objesi oluştur
     room.players.forEach(p => {
@@ -228,7 +212,7 @@ io.on('connection', (socket) => {
     });
 
     io.to(currentRoom).emit('game-started', { 
-      questions: questions.map(q => ({ id: q.id, question: q.question }))
+      questions: room.gameQuestions.map(q => ({ id: q.id, question: q.question }))
     });
 
     console.log(`Oyun başladı: ${currentRoom}`);
@@ -301,17 +285,73 @@ io.on('connection', (socket) => {
 
     // Doğru cevapları da gönder
     const correctAnswers = {};
-    questions.forEach(q => {
+    room.gameQuestions.forEach(q => {
       correctAnswers[q.id] = q.answer;
     });
 
     socket.emit('results-data', { 
       results, 
       correctAnswers,
-      questions: questions.map(q => ({ id: q.id, question: q.question })),
+      questions: room.gameQuestions.map(q => ({ id: q.id, question: q.question })),
       totalPlayers: room.players.length,
       finishedCount: room.finishedPlayers.length
     });
+  });
+
+  // Sohbet mesajı
+  socket.on('send-chat', (data) => {
+    if (!currentRoom) return;
+    const room = rooms.get(currentRoom);
+    if (!room) return;
+    
+    // Testi bitirmeyenler oyun sırasında konuşamaz
+    if (room.status === 'playing') {
+      const isFinished = room.finishedPlayers.find(p => p.id === socket.id);
+      if (!isFinished) {
+        socket.emit('error-msg', { message: 'Sadece testi bitirenler sohbet edebilir!' });
+        return;
+      }
+    }
+
+    // Mesajı odadaki herkese gönder
+    io.to(currentRoom).emit('chat-message', {
+      sender: playerName,
+      senderId: socket.id,
+      message: data.message,
+      timestamp: Date.now()
+    });
+  });
+
+  // Oyunu yeniden başlat
+  socket.on('restart-game', () => {
+    if (!currentRoom) return;
+    const room = rooms.get(currentRoom);
+    if (!room || room.owner.id !== socket.id) return;
+    
+    room.round = room.round === 1 ? 2 : 1; // Tur değiştir
+    room.status = 'playing';
+    room.playerAnswers = {};
+    room.finishedPlayers = [];
+    room.gameQuestions = getQuestions(room.round);
+
+    room.players.forEach(p => {
+      room.playerAnswers[p.id] = {};
+    });
+
+    io.to(currentRoom).emit('game-started', { 
+      questions: room.gameQuestions.map(q => ({ id: q.id, question: q.question })),
+      isRestart: true
+    });
+    
+    io.to(currentRoom).emit('chat-message', {
+      sender: 'Sistem',
+      senderId: 'system',
+      message: `Oyun oda sahibi tarafından yeniden başlatıldı! ${room.round}. Tur başlıyor.`,
+      timestamp: Date.now(),
+      isSystem: true
+    });
+
+    console.log(`Oyun yeniden başladı (Tur ${room.round}): ${currentRoom}`);
   });
 
   // Odaları listele

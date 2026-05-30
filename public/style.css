@@ -1833,3 +1833,71 @@ input[type="password"]::placeholder {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* ===== CHAT SYSTEM ===== */
+.chat-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-messages {
+  height: 150px;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(0,0,0,0.2);
+}
+
+.chat-message {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.chat-message .sender {
+  font-weight: 700;
+  color: var(--blue);
+  margin-right: 5px;
+}
+
+.chat-message.system-msg .sender {
+  color: var(--yellow);
+  font-weight: normal;
+  font-style: italic;
+}
+
+.chat-message.system-msg {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.chat-input-area {
+  display: flex;
+  border-top: 1px solid var(--border-color);
+}
+
+.chat-input-area input {
+  flex: 1;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+}
+
+.chat-input-area input:focus {
+  box-shadow: none;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.chat-input-area button {
+  border-radius: 0;
+  padding: 10px 15px;
+}

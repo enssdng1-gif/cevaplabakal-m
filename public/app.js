@@ -88,6 +88,17 @@ const answersList = document.getElementById('answers-list');
 // Toast
 const toast = document.getElementById('toast');
 
+// Chat & Restart
+const lobbyChatMessages = document.getElementById('lobby-chat-messages');
+const lobbyChatInput = document.getElementById('lobby-chat-input');
+const lobbyChatSendBtn = document.getElementById('lobby-chat-send-btn');
+
+const resultsChatMessages = document.getElementById('results-chat-messages');
+const resultsChatInput = document.getElementById('results-chat-input');
+const resultsChatSendBtn = document.getElementById('results-chat-send-btn');
+
+const restartGameBtn = document.getElementById('restart-game-btn');
+
 // ===== HELPERS =====
 function showScreen(id) {
   screens.forEach(s => s.classList.remove('active'));
@@ -129,12 +140,7 @@ function getInitials(name) {
 
 // ===== WELCOME FLOW =====
 setTimeout(() => {
-  welcomeText.style.animation = 'fadeOut 0.6s ease forwards';
-  welcomeDesc.style.animation = 'fadeOut 0.6s ease 0.2s forwards';
-  
-  setTimeout(() => {
-    showScreen('name-screen');
-  }, 800);
+  showScreen('name-screen');
 }, 3500);
 
 // ===== SOCKET ID =====
@@ -449,6 +455,13 @@ function renderResults(data) {
     resultsStatus.classList.remove('waiting-results');
   }
 
+  // Show restart button if owner and everyone finished
+  if (isOwner && finishedCount === totalPlayers && totalPlayers > 0) {
+    restartGameBtn.classList.remove('hidden');
+  } else {
+    restartGameBtn.classList.add('hidden');
+  }
+
   if (results.length === 0) {
     resultsList.innerHTML = `
       <div class="empty-state">
@@ -459,25 +472,10 @@ function renderResults(data) {
     return;
   }
 
-  // Puanlama - doğru cevap sayısı
-  const scoredResults = results.map(r => {
-    let correctCount = 0;
-    qs.forEach((q, idx) => {
-      const given = (r.answers[idx] || '').toLowerCase().trim();
-      const correct = correctAnswers[q.id].toLowerCase().trim();
-      // Basit eşleşme - ana isim içeriyorsa doğru say
-      if (given && (correct.includes(given) || given.includes(correct) || 
-          given.split(' ').some(part => correct.toLowerCase().includes(part.toLowerCase()) && part.length > 2))) {
-        correctCount++;
-      }
-    });
-    return { ...r, correctCount };
-  });
+  // Sadece bitirme zamanına göre sırala
+  const sortedResults = [...results].sort((a, b) => a.finishTime - b.finishTime);
 
-  // Sırala
-  scoredResults.sort((a, b) => b.correctCount - a.correctCount);
-
-  resultsList.innerHTML = scoredResults.map((r, index) => {
+  resultsList.innerHTML = sortedResults.map((r, index) => {
     const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : 'rank-default';
     
     return `
@@ -485,7 +483,7 @@ function renderResults(data) {
         <div class="result-rank ${rankClass}">${index + 1}</div>
         <div class="result-info">
           <div class="result-name">${escapeHtml(r.name)}</div>
-          <div class="result-score">${r.correctCount} / ${qs.length} doğru</div>
+          <div class="result-score">Testi Tamamladı</div>
         </div>
         <button class="view-answers-btn" onclick="viewAnswers('${r.id}')">Cevapları Gör</button>
       </div>
@@ -494,7 +492,6 @@ function renderResults(data) {
 
   // Store for modal
   window._resultsData = data;
-  window._scoredResults = scoredResults;
 }
 
 window.viewAnswers = function(playerId) {
@@ -508,25 +505,15 @@ window.viewAnswers = function(playerId) {
 
   answersList.innerHTML = data.questions.map((q, idx) => {
     const given = player.answers[idx] || '—';
-    const correct = data.correctAnswers[q.id];
-    const isCorrectAnswer = given !== '—' && (
-      correct.toLowerCase().includes(given.toLowerCase().trim()) || 
-      given.toLowerCase().trim().includes(correct.toLowerCase()) ||
-      given.toLowerCase().trim().split(' ').some(part => correct.toLowerCase().includes(part.toLowerCase()) && part.length > 2)
-    );
 
     return `
       <div class="answer-item">
         <div class="answer-num">${idx + 1}</div>
         <div class="answer-detail">
           <div class="answer-question-text">${escapeHtml(q.question)}</div>
-          <div class="answer-given ${isCorrectAnswer ? 'answer-correct' : 'answer-wrong'}">
-            ${isCorrectAnswer ? '✓' : '✗'} ${escapeHtml(given)}
+          <div class="answer-given answer-correct">
+            ${escapeHtml(given)}
           </div>
-          ${!isCorrectAnswer && given !== '—' ? 
-            `<div class="correct-answer-text">Doğru cevap: ${escapeHtml(correct)}</div>` : 
-            given === '—' ? `<div class="correct-answer-text">Cevaplanmadı — Doğru cevap: ${escapeHtml(correct)}</div>` : ''
-          }
         </div>
       </div>
     `;
@@ -550,6 +537,7 @@ resultsBackBtn.addEventListener('click', () => {
 
 // Oda oluşturuldu
 socket.on('room-created', (data) => {
+  clearChat();
   renderLobby(data.room);
   showScreen('lobby-screen');
   showToast('Oda oluşturuldu!', 'success');
@@ -559,6 +547,7 @@ socket.on('room-created', (data) => {
 
 // Odaya katıldı
 socket.on('room-joined', (data) => {
+  clearChat();
   renderLobby(data.room);
   showScreen('lobby-screen');
   showToast('Odaya katıldınız!', 'success');
@@ -667,4 +656,41 @@ socket.on('connect', () => {
   if (playerName) {
     socket.emit('set-name', playerName);
   }
+});
+
+// ===== CHAT & RESTART LOGIC =====
+function clearChat() {
+  lobbyChatMessages.innerHTML = '';
+  resultsChatMessages.innerHTML = '';
+}
+
+function sendChatMessage(inputEl) {
+  const msg = inputEl.value.trim();
+  if (!msg) return;
+  socket.emit('send-chat', { message: msg });
+  inputEl.value = '';
+}
+
+lobbyChatSendBtn.addEventListener('click', () => sendChatMessage(lobbyChatInput));
+lobbyChatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChatMessage(lobbyChatInput); });
+
+resultsChatSendBtn.addEventListener('click', () => sendChatMessage(resultsChatInput));
+resultsChatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChatMessage(resultsChatInput); });
+
+socket.on('chat-message', (data) => {
+  const msgHTML = `
+    <div class="chat-message ${data.isSystem ? 'system-msg' : ''}">
+      <span class="sender">${escapeHtml(data.sender)}${data.isSystem ? '' : ':'}</span>
+      <span class="text">${escapeHtml(data.message)}</span>
+    </div>
+  `;
+  lobbyChatMessages.insertAdjacentHTML('beforeend', msgHTML);
+  resultsChatMessages.insertAdjacentHTML('beforeend', msgHTML);
+  
+  lobbyChatMessages.scrollTop = lobbyChatMessages.scrollHeight;
+  resultsChatMessages.scrollTop = resultsChatMessages.scrollHeight;
+});
+
+restartGameBtn.addEventListener('click', () => {
+  socket.emit('restart-game');
 });
