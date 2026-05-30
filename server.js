@@ -817,14 +817,10 @@ io.on('connection', (socket) => {
       }
     }
 
-    const senderData = globalUsers.get(socket.id);
-    const userId = senderData ? senderData.id : socket.id;
-
     // Mesajı odadaki herkese gönder
     io.to(currentRoom).emit('chat-message', {
       sender: playerName,
       senderId: socket.id,
-      userId: userId,
       message: data.message,
       timestamp: Date.now()
     });
@@ -1082,11 +1078,6 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log(`Ayrıldı: ${socket.id}`);
     leaveCurrentRoom(socket);
-    if (globalUsers.has(socket.id)) {
-      const u = globalUsers.get(socket.id);
-      userIndex.delete(u.id);
-      globalUsers.delete(socket.id);
-    }
   });
 
   function leaveCurrentRoom(sock) {

@@ -256,19 +256,12 @@ function getInitials(name) {
 
 // ===== WELCOME FLOW =====
 setTimeout(() => {
-  if (userProfile.name) {
-    nameInput.value = userProfile.name;
-    nameSubmitBtn.disabled = false;
-  }
   showScreen('name-screen');
 }, 3500);
 
 // ===== SOCKET ID =====
 socket.on('connect', () => {
   mySocketId = socket.id;
-  if (playerName) {
-    socket.emit('login', userProfile);
-  }
 });
 
 // ===== NAME INPUT =====
@@ -286,28 +279,10 @@ nameSubmitBtn.addEventListener('click', submitName);
 
 function submitName() {
   playerName = nameInput.value.trim();
-  userProfile.name = playerName;
-  saveProfile();
-  
-  socket.emit('login', userProfile);
+  socket.emit('set-name', playerName);
   playerGreeting.textContent = `Hoş geldin, ${playerName}! 👋`;
   showScreen('menu-screen');
-  
-  checkWhatsNew();
 }
-
-function checkWhatsNew() {
-  const seen = localStorage.getItem('seenUpdate_v2');
-  if (!seen) {
-    whatsNewModal.classList.remove('hidden');
-    localStorage.setItem('seenUpdate_v2', 'true');
-  }
-  checkAchievement('FIRST_BLOOD');
-}
-
-whatsNewOkBtn.addEventListener('click', () => {
-  whatsNewModal.classList.add('hidden');
-});
 
 // ===== MENU =====
 createRoomBtn.addEventListener('click', () => showScreen('create-room-screen'));
@@ -697,14 +672,6 @@ socket.on('repost-answer-result', (data) => {
   if (data.isCorrect) {
     repostFeedback.classList.add('correct');
     repostFeedback.textContent = '🎉 Doğru Bildin!';
-    
-    if (typeof userProfile !== 'undefined') {
-      userProfile.stats.repostCorrects = (userProfile.stats.repostCorrects || 0) + 1;
-      saveProfile();
-      if (userProfile.stats.repostCorrects >= 5) {
-        checkAchievement('B12_IMMUNITY');
-      }
-    }
   } else {
     repostFeedback.classList.add('wrong');
     repostFeedback.textContent = `❌ Yanlış! Doğrusu: ${data.correctAnswer}`;
@@ -948,21 +915,6 @@ function renderResults(data) {
 
   // Store for modal
   window._resultsData = data;
-  
-  if (typeof userProfile !== 'undefined') {
-    const myResult = results.find(r => r.id === mySocketId);
-    if (myResult && myResult.isFinished) {
-      let correctCount = 0;
-      qs.forEach((q, idx) => {
-        const ca = correctAnswers[idx] ? String(correctAnswers[idx]).trim().toLowerCase() : '';
-        const pAns = myResult.answers[idx] ? String(myResult.answers[idx]).trim().toLowerCase() : '';
-        if (ca && pAns && ca === pAns) correctCount++;
-      });
-      if (correctCount >= 3) {
-        checkAchievement('QUIZ_MASTER');
-      }
-    }
-  }
 }
 
 window.viewAnswers = function(playerId) {
@@ -1219,14 +1171,6 @@ function sendChatMessage(inputEl) {
   if (!msg) return;
   socket.emit('send-chat', { message: msg });
   inputEl.value = '';
-  
-  if (typeof userProfile !== 'undefined') {
-    userProfile.stats.chatMessages = (userProfile.stats.chatMessages || 0) + 1;
-    saveProfile();
-    if (userProfile.stats.chatMessages >= 10) {
-      checkAchievement('CHATBOX');
-    }
-  }
 }
 
 lobbyChatSendBtn.addEventListener('click', () => sendChatMessage(lobbyChatInput));
@@ -1456,11 +1400,6 @@ socket.on('describe-guess-result', (data) => {
   if (data.isCorrect) {
     describeFeedback.textContent = '🎉 Doğru Bildin!';
     describeFeedback.className = 'answer-feedback success';
-    
-    const timeRemaining = parseInt(describeTimer.textContent) || 0;
-    if (timeRemaining >= 10 && typeof userProfile !== 'undefined') {
-      checkAchievement('SPEEDY');
-    }
   } else {
     describeFeedback.textContent = `❌ Yanlış! Doğrusu: ${data.correctAnswer}`;
     describeFeedback.className = 'answer-feedback error';
@@ -1519,279 +1458,4 @@ socket.on('describe-results-data', (data) => {
   // chat-message z.a. önceki handler'da dinleniyor, biz ekliyoruz:
 })();
 
-// ==========================================
-// ===== PROFIL, ARKADAŞ VE ROZET SİSTEMİ =====
-// ==========================================
 
-const ALL_BADGES = {
-  'FIRST_BLOOD': { name: 'Hoşgeldin Yabancı!', desc: 'Oyuna ilk kez giriş yap.' },
-  'B12_IMMUNITY': { name: 'B-12 Bağışıklığı!', desc: 'Repost Bulmaca modunda en az 5 doğru tahmin yap.' },
-  'QUIZ_MASTER': { name: 'Ayaklı Kütüphane!', desc: 'Soru-Cevap modunda üst üste 3 doğru cevap ver.' },
-  'SPEEDY': { name: 'Şimşek McQueen!', desc: 'Kimi Tarif Ediyorum modunda soruyu ilk 5 saniyede bil.' },
-  'CHATBOX': { name: 'Mahalle Dedikoducusu!', desc: 'Sohbet penceresine toplam 10 mesaj gönder.' }
-};
-
-// 1. Profil Yönetimi
-myProfileBtn.addEventListener('click', () => {
-  myProfileId.textContent = userProfile.id;
-  myProfileName.value = userProfile.name;
-  
-  document.querySelectorAll('.avatar-option').forEach(opt => {
-    opt.classList.remove('selected');
-    if (opt.dataset.avatar === userProfile.avatar) {
-      opt.classList.add('selected');
-    }
-  });
-  if (userProfile.avatar && userProfile.avatar.length > 10) {
-    customAvatarBtn.classList.add('selected');
-    customAvatarBtn.innerHTML = `<img src="${userProfile.avatar}" />`;
-  } else {
-    customAvatarBtn.innerHTML = '📷+';
-  }
-
-  renderBadges(userProfile.achievements, myProfileBadges);
-  profileModal.classList.remove('hidden');
-});
-
-profileCloseBtn.addEventListener('click', () => profileModal.classList.add('hidden'));
-
-document.querySelectorAll('.avatar-option:not(.custom-avatar-btn)').forEach(opt => {
-  opt.addEventListener('click', () => {
-    document.querySelectorAll('.avatar-option').forEach(o => o.classList.remove('selected'));
-    opt.classList.add('selected');
-    userProfile.avatar = opt.dataset.avatar;
-  });
-});
-
-customAvatarBtn.addEventListener('click', () => customAvatarInput.click());
-customAvatarInput.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const img = new Image();
-    img.src = ev.target.result;
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const maxSize = 100;
-      let width = img.width;
-      let height = img.height;
-      if (width > height && width > maxSize) { height *= maxSize / width; width = maxSize; }
-      else if (height > maxSize) { width *= maxSize / height; height = maxSize; }
-      canvas.width = width; canvas.height = height;
-      ctx.drawImage(img, 0, 0, width, height);
-      
-      const compressed = canvas.toDataURL('image/jpeg', 0.8);
-      userProfile.avatar = compressed;
-      document.querySelectorAll('.avatar-option').forEach(o => o.classList.remove('selected'));
-      customAvatarBtn.classList.add('selected');
-      customAvatarBtn.innerHTML = `<img src="${compressed}" />`;
-    };
-  };
-  reader.readAsDataURL(file);
-});
-
-profileSaveBtn.addEventListener('click', () => {
-  const newName = myProfileName.value.trim();
-  if (newName.length >= 2) {
-    userProfile.name = newName;
-    playerName = newName;
-    playerGreeting.textContent = `Hoş geldin, ${playerName}! 👋`;
-  }
-  saveProfile();
-  socket.emit('update-profile', userProfile);
-  profileModal.classList.add('hidden');
-  showToast('Profil kaydedildi!', 'success');
-});
-
-function renderBadges(badgeIds, container) {
-  container.innerHTML = '';
-  if (!badgeIds || badgeIds.length === 0) {
-    container.innerHTML = `<div style="color: var(--text-hint); font-size: 0.85rem;">Henüz rozet kazanılmadı. Oyun oynayarak kazanabilirsin!</div>`;
-    return;
-  }
-  badgeIds.forEach(id => {
-    if (ALL_BADGES[id]) {
-      const el = document.createElement('div');
-      el.className = 'badge-item';
-      el.title = ALL_BADGES[id].desc;
-      el.innerHTML = `<span>🏆</span> ${ALL_BADGES[id].name}`;
-      container.appendChild(el);
-    }
-  });
-}
-
-// 2. Arkadaşlık Sistemi
-myFriendsBtn.addEventListener('click', () => {
-  friendsModal.classList.remove('hidden');
-  socket.emit('get-friends-status', userProfile.friends);
-});
-
-friendsCloseBtn.addEventListener('click', () => friendsModal.classList.add('hidden'));
-
-addFriendBtn.addEventListener('click', () => {
-  const targetId = addFriendIdInput.value.trim().toUpperCase();
-  if (targetId.length !== 6) return showToast('Geçerli bir 6 haneli ID girin.', 'error');
-  if (targetId === userProfile.id) return showToast('Kendini ekleyemezsin!', 'error');
-  if (userProfile.friends.includes(targetId)) return showToast('Bu kişi zaten arkadaşın!', 'error');
-  
-  socket.emit('send-friend-request', { targetId, sender: userProfile });
-  showToast('İstek gönderildi!', 'success');
-  addFriendIdInput.value = '';
-});
-
-socket.on('friend-request-received', (req) => {
-  showToast(`${req.sender.name} sana arkadaşlık isteği gönderdi!`, 'info');
-  const div = document.createElement('div');
-  div.className = 'friend-item';
-  div.innerHTML = `
-    <div class="friend-info">
-      <div class="friend-avatar">${req.sender.avatar.length > 10 ? `<img src="${req.sender.avatar}">` : req.sender.avatar}</div>
-      <div class="friend-name">${req.sender.name}</div>
-    </div>
-    <div style="display:flex; gap:5px;">
-      <button class="btn btn-small btn-green" onclick="acceptFriend('${req.sender.id}', '${req.sender.name}', this.parentElement.parentElement)">Kabul</button>
-      <button class="btn btn-small btn-secondary" onclick="this.parentElement.parentElement.remove()">Red</button>
-    </div>
-  `;
-  friendRequestsList.appendChild(div);
-  friendRequestsContainer.classList.remove('hidden');
-});
-
-window.acceptFriend = function(targetId, targetName, el) {
-  if (!userProfile.friends.includes(targetId)) {
-    userProfile.friends.push(targetId);
-    saveProfile();
-  }
-  el.remove();
-  if (friendRequestsList.children.length === 0) friendRequestsContainer.classList.add('hidden');
-  socket.emit('accept-friend-request', { targetId, sender: userProfile, targetName });
-  showToast(`${targetName} ile arkadaş oldun!`, 'success');
-};
-
-socket.on('friend-request-accepted', (data) => {
-  if (!userProfile.friends.includes(data.targetId)) {
-    userProfile.friends.push(data.targetId);
-    saveProfile();
-  }
-  showToast(`${data.targetName} arkadaşlık isteğini kabul etti!`, 'success');
-});
-
-socket.on('friends-status-data', (data) => {
-  const list = data.friendsData;
-  friendsList.innerHTML = '';
-  if (list.length === 0) {
-    friendsList.innerHTML = `<div style="color: var(--text-hint); text-align: center; padding: 20px;">Listen şu an boş.</div>`;
-    return;
-  }
-  
-  list.forEach(f => {
-    const isOnline = f.isOnline;
-    const canJoin = isOnline && f.roomId && !f.roomHasPassword;
-    const div = document.createElement('div');
-    div.className = 'friend-item';
-    div.innerHTML = `
-      <div class="friend-info">
-        <div class="friend-avatar" onclick="viewProfile('${f.id}')" style="cursor:pointer">${f.avatar && f.avatar.length > 10 ? `<img src="${f.avatar}">` : f.avatar}</div>
-        <div>
-          <div class="friend-name clickable-name" onclick="viewProfile('${f.id}')">${f.name}</div>
-          <div class="friend-status ${isOnline ? 'online' : ''}">${isOnline ? 'Çevrimiçi' : 'Çevrimdışı'}</div>
-        </div>
-      </div>
-      ${canJoin ? `<button class="btn btn-small btn-blue" onclick="joinRoom('${f.roomId}')">Katıl</button>` : ''}
-    `;
-    friendsList.appendChild(div);
-  });
-});
-
-window.joinRoom = function(roomId) {
-  friendsModal.classList.add('hidden');
-  socket.emit('join-room', { roomId, password: null });
-};
-
-window.viewProfile = function(userId) {
-  if (userId === userProfile.id) {
-    myProfileBtn.click();
-    return;
-  }
-  socket.emit('get-profile', userId);
-};
-
-socket.on('profile-data', (data) => {
-  if (!data.profile) return showToast('Kullanıcı bulunamadı veya şu an çevrimdışı.', 'error');
-  const p = data.profile;
-  publicProfileAvatar.innerHTML = p.avatar && p.avatar.length > 10 ? `<img src="${p.avatar}">` : p.avatar;
-  publicProfileName.textContent = p.name;
-  publicProfileId.textContent = p.id;
-  renderBadges(p.achievements, publicProfileBadges);
-  
-  if (p.id !== userProfile.id && !userProfile.friends.includes(p.id)) {
-    publicProfileAddBtn.classList.remove('hidden');
-    publicProfileAddBtn.onclick = () => {
-      socket.emit('send-friend-request', { targetId: p.id, sender: userProfile });
-      showToast('İstek gönderildi!', 'success');
-      publicProfileAddBtn.classList.add('hidden');
-    };
-  } else {
-    publicProfileAddBtn.classList.add('hidden');
-  }
-  
-  publicProfileModal.classList.remove('hidden');
-});
-
-publicProfileCloseBtn.addEventListener('click', () => publicProfileModal.classList.add('hidden'));
-
-// Herhangi bir chat veya skor listesinde isme tıklayınca profil açma
-document.addEventListener('click', (e) => {
-  if (e.target.classList.contains('player-name-clickable')) {
-    viewProfile(e.target.dataset.userid);
-  }
-});
-
-// 3. Başarım (Rozet) Motoru
-window.checkAchievement = function(achId) {
-  if (userProfile.achievements.includes(achId)) return;
-  
-  userProfile.achievements.push(achId);
-  saveProfile();
-  socket.emit('update-profile', userProfile);
-  
-  const ach = ALL_BADGES[achId];
-  if (ach) {
-    achToastName.textContent = ach.name;
-    achievementToast.classList.add('show');
-    setTimeout(() => {
-      achievementToast.classList.remove('show');
-    }, 4500);
-  }
-};
-
-// Override chat-message to include describe screens
-socket.off('chat-message');
-socket.on('chat-message', (data) => {
-  let senderHTML = `<span class="sender">${escapeHtml(data.sender)}${data.isSystem ? '' : ':'}</span>`;
-  if (!data.isSystem && data.userId) {
-    senderHTML = `<span class="sender player-name-clickable" data-userid="${data.userId}" style="cursor:pointer; color:var(--blue);">${escapeHtml(data.sender)}:</span>`;
-  }
-  
-  const msgHTML = `
-    <div class="chat-message ${data.isSystem ? 'system-msg' : ''}">
-      ${senderHTML}
-      <span class="text">${escapeHtml(data.message)}</span>
-    </div>
-  `;
-  lobbyChatMessages.insertAdjacentHTML('beforeend', msgHTML);
-  resultsChatMessages.insertAdjacentHTML('beforeend', msgHTML);
-  repostChatMessages.insertAdjacentHTML('beforeend', msgHTML);
-  quizChatMessages.insertAdjacentHTML('beforeend', msgHTML);
-  describeWaitingChatMessages.insertAdjacentHTML('beforeend', msgHTML);
-  describeGuessingChatMessages.insertAdjacentHTML('beforeend', msgHTML);
-  
-  lobbyChatMessages.scrollTop = lobbyChatMessages.scrollHeight;
-  resultsChatMessages.scrollTop = resultsChatMessages.scrollHeight;
-  repostChatMessages.scrollTop = repostChatMessages.scrollHeight;
-  quizChatMessages.scrollTop = quizChatMessages.scrollHeight;
-  describeWaitingChatMessages.scrollTop = describeWaitingChatMessages.scrollHeight;
-  describeGuessingChatMessages.scrollTop = describeGuessingChatMessages.scrollHeight;
-});
