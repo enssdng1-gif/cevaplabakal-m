@@ -20,6 +20,9 @@ let repostGlobalOffset = 0; // Tur başındaki global foto index offset
 let repostRoundIndex = 0;
 let repostTotalRounds = 0;
 
+// ===== DESCRIBE STATE =====
+let describeTimerInterval = null;
+
 // ===== DOM ELEMENTS =====
 const screens = document.querySelectorAll('.screen');
 
@@ -340,7 +343,7 @@ function renderRooms(roomsData) {
         <div class="room-meta">
           <span>👤 ${room.ownerName}</span>
           <span>👥 ${room.playerCount}/${room.maxPlayers}</span>
-          <span>🎮 ${room.gameType === 'repost' ? 'Repost Bulmaca' : 'Soru-Cevap'}</span>
+          <span>🎮 ${room.gameType === 'repost' ? 'Repost Bulmaca' : room.gameType === 'describe' ? 'Kimi Tarif Ediyorum?' : 'Soru-Cevap'}</span>
         </div>
       </div>
       ${room.hasPassword ? 
@@ -1105,6 +1108,8 @@ function clearChat() {
   resultsChatMessages.innerHTML = '';
   repostChatMessages.innerHTML = '';
   quizChatMessages.innerHTML = '';
+  if (describeWaitingChatMessages) describeWaitingChatMessages.innerHTML = '';
+  if (describeGuessingChatMessages) describeGuessingChatMessages.innerHTML = '';
 }
 
 function sendChatMessage(inputEl) {
@@ -1140,6 +1145,267 @@ repostNextRoundBtn.addEventListener('click', () => {
   repostWaitingStatus.textContent = 'Sıradaki tur başlatılıyor...';
 });
 
+// chat-message handler is defined at the bottom (with describe screens included)
+
+restartGameBtn.addEventListener('click', () => {
+  socket.emit('restart-game');
+});
+
+// ===== KIMI TARIF EDIYORUM GAME LOGIC =====
+
+// DOM Elements
+const describeTargetInput = document.getElementById('describe-target-input');
+const describeTextInput = document.getElementById('describe-text-input');
+const describeSubmitBtn = document.getElementById('describe-submit-btn');
+const describeWaitingStatus = document.getElementById('describe-waiting-status');
+const currentDescriberName = document.getElementById('current-describer-name');
+const describeWaitingChatMessages = document.getElementById('describe-waiting-chat-messages');
+const describeWaitingChatInput = document.getElementById('describe-waiting-chat-input');
+const describeWaitingChatSendBtn = document.getElementById('describe-waiting-chat-send-btn');
+const guessingDescriberName = document.getElementById('guessing-describer-name');
+const describeTimer = document.getElementById('describe-timer');
+const describeTextDisplay = document.getElementById('describe-text-display');
+const describeGuessInput = document.getElementById('describe-guess-input');
+const describeGuessSubmitBtn = document.getElementById('describe-guess-submit-btn');
+const describeAnswerArea = document.getElementById('describe-answer-area');
+const describeFeedback = document.getElementById('describe-feedback');
+const describeScoresList = document.getElementById('describe-scores-list');
+const describeGuessingChatMessages = document.getElementById('describe-guessing-chat-messages');
+const describeGuessingChatInput = document.getElementById('describe-guessing-chat-input');
+const describeGuessingChatSendBtn = document.getElementById('describe-guessing-chat-send-btn');
+const describeResultsList = document.getElementById('describe-results-list');
+const describeRestartBtn = document.getElementById('describe-restart-btn');
+const describeBackBtn = document.getElementById('describe-back-btn');
+
+// -- Submit description
+describeSubmitBtn.addEventListener('click', () => {
+  const target = describeTargetInput.value.trim();
+  const description = describeTextInput.value.trim();
+  if (!target) {
+    showToast('Kimi tarif ettiğinizi yazın!', 'error');
+    return;
+  }
+  if (!description) {
+    showToast('Tarif metnini yazın!', 'error');
+    return;
+  }
+  socket.emit('submit-description', { target, description });
+  describeSubmitBtn.disabled = true;
+  describeSubmitBtn.textContent = 'Gönderildi...';
+});
+
+// -- Submit guess
+describeGuessSubmitBtn.addEventListener('click', submitDescribeGuess);
+describeGuessInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') submitDescribeGuess();
+});
+
+function submitDescribeGuess() {
+  const guess = describeGuessInput.value.trim();
+  if (!guess) {
+    showToast('Bir tahmin yazın!', 'error');
+    describeGuessInput.style.animation = 'shake 0.4s ease';
+    setTimeout(() => describeGuessInput.style.animation = '', 400);
+    return;
+  }
+  socket.emit('submit-describe-guess', { guess });
+  describeGuessInput.disabled = true;
+  describeGuessSubmitBtn.disabled = true;
+  describeGuessSubmitBtn.textContent = 'Bekleniyor...';
+}
+
+// -- Describe chat
+describeWaitingChatSendBtn.addEventListener('click', () => sendChatMessage(describeWaitingChatInput));
+describeWaitingChatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChatMessage(describeWaitingChatInput); });
+describeGuessingChatSendBtn.addEventListener('click', () => sendChatMessage(describeGuessingChatInput));
+describeGuessingChatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChatMessage(describeGuessingChatInput); });
+
+// -- Describe result buttons
+describeBackBtn.addEventListener('click', () => {
+  socket.emit('leave-room');
+  currentRoom = null;
+  isOwner = false;
+  showScreen('menu-screen');
+});
+
+describeRestartBtn.addEventListener('click', () => {
+  socket.emit('restart-game');
+});
+
+// -- Render scores sidebar
+function renderDescribeScores(scores, guessStatus) {
+  if (!scores) return;
+  describeScoresList.innerHTML = scores
+    .sort((a, b) => b.score - a.score)
+    .map(s => {
+      let statusClass = '';
+      let statusIcon = '';
+      if (guessStatus) {
+        const gs = guessStatus.find(g => g.id === s.id);
+        if (gs) {
+          if (gs.status === 'describer') { statusClass = 'is-describer'; statusIcon = '🎤'; }
+          else if (gs.status === 'correct') { statusClass = 'guessed-correct'; statusIcon = '✅'; }
+          else if (gs.status === 'wrong') { statusClass = 'guessed-wrong'; statusIcon = '❌'; }
+          else { statusIcon = '⏳'; }
+        }
+      }
+      return `
+        <div class="describe-score-item ${statusClass}">
+          <span class="describe-score-status">${statusIcon}</span>
+          <span class="describe-score-name">${escapeHtml(s.name)}</span>
+          <span class="describe-score-points">${s.score} P</span>
+        </div>
+      `;
+    }).join('');
+}
+
+// -- Render final results
+function renderDescribeResults(results) {
+  describeResultsList.innerHTML = results.map((r, index) => {
+    const rankClass = index === 0 ? 'repost-rank-1' : index === 1 ? 'repost-rank-2' : index === 2 ? 'repost-rank-3' : 'repost-rank-default';
+    const crown = index === 0 ? '<div class="describe-result-crown">👑</div>' : '';
+    return `
+      <div class="repost-result-item ${index === 0 ? 'first-place' : ''}" style="position: relative;">
+        ${crown}
+        <div class="repost-result-rank ${rankClass}">${index + 1}</div>
+        <div class="repost-result-info">
+          <div class="repost-result-name">${escapeHtml(r.name)}</div>
+          <div class="repost-result-score-text">${r.score} Puan</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ===== DESCRIBE SOCKET EVENTS =====
+
+// Sıra sende - Tanıtıcı ekranı
+socket.on('describe-your-turn', (data) => {
+  describeTargetInput.value = '';
+  describeTextInput.value = '';
+  describeSubmitBtn.disabled = false;
+  describeSubmitBtn.textContent = `Gönder ve Süreyi Başlat (15sn) - Tur ${data.turnIndex}/${data.totalTurns}`;
+  showScreen('describe-input-screen');
+  showToast('Sıra sende! Birini tarif et!', 'success');
+});
+
+// Diğer oyuncular - Bekleme ekranı
+socket.on('describe-wait-turn', (data) => {
+  currentDescriberName.textContent = data.describerName;
+  describeWaitingStatus.innerHTML = `Tanıtıcı (<strong>${escapeHtml(data.describerName)}</strong>) tarifini yazıyor... (Tur ${data.turnIndex}/${data.totalTurns})`;
+  showScreen('describe-waiting-screen');
+});
+
+// Tahmin başlat - Herkesin ekranı değişir
+socket.on('start-guessing', (data) => {
+  guessingDescriberName.textContent = data.describerName;
+  describeTextDisplay.textContent = data.description;
+  describeTimer.textContent = '15';
+  describeTimer.className = 'timer-circle';
+
+  // Tahmin alanını sıfırla
+  describeGuessInput.value = '';
+  describeGuessInput.disabled = false;
+  describeGuessSubmitBtn.disabled = false;
+  describeGuessSubmitBtn.textContent = 'Tahmin Et';
+  describeFeedback.classList.add('hidden');
+  describeAnswerArea.style.display = 'flex';
+
+  // Tanıtıcıysan tahmin edemezsin
+  if (data.describerId === mySocketId) {
+    describeGuessInput.disabled = true;
+    describeGuessInput.placeholder = 'Tanıtıcı olarak tahmin edemezsin';
+    describeGuessSubmitBtn.disabled = true;
+    describeGuessSubmitBtn.textContent = 'Bekle...';
+  } else {
+    describeGuessInput.placeholder = 'Kim bu? Tahminini yaz...';
+  }
+
+  renderDescribeScores(data.scores, null);
+  showScreen('describe-guessing-screen');
+  if (data.describerId !== mySocketId) {
+    describeGuessInput.focus();
+  }
+});
+
+// Zamanlayıcı tick
+socket.on('describe-timer-tick', (data) => {
+  describeTimer.textContent = data.timeLeft;
+  if (data.timeLeft <= 5) {
+    describeTimer.className = 'timer-circle danger';
+  } else if (data.timeLeft <= 10) {
+    describeTimer.className = 'timer-circle warning';
+  } else {
+    describeTimer.className = 'timer-circle';
+  }
+});
+
+// Tahmin sonucu
+socket.on('describe-guess-result', (data) => {
+  describeFeedback.classList.remove('hidden');
+  if (data.isCorrect) {
+    describeFeedback.textContent = '🎉 Doğru Bildin!';
+    describeFeedback.className = 'answer-feedback success';
+  } else {
+    describeFeedback.textContent = `❌ Yanlış! Doğrusu: ${data.correctAnswer}`;
+    describeFeedback.className = 'answer-feedback error';
+  }
+});
+
+// Tahmin kilitlendi
+socket.on('describe-guess-locked', (data) => {
+  showToast(data.message, 'error');
+});
+
+// Puan/durum güncellemesi
+socket.on('describe-scores-update', (data) => {
+  renderDescribeScores(data.scores, data.guessStatus);
+});
+
+// Tur bitti
+socket.on('describe-turn-ended', (data) => {
+  // Tahmin alanını kilitle ve sonuç göster
+  describeGuessInput.disabled = true;
+  describeGuessSubmitBtn.disabled = true;
+  describeAnswerArea.style.display = 'none';
+
+  describeFeedback.classList.remove('hidden');
+  describeFeedback.className = 'answer-feedback success';
+  describeFeedback.innerHTML = `
+    <div class="describe-turn-result">
+      <h3>✅ Doğru Cevap: ${escapeHtml(data.correctAnswer)}</h3>
+      <p>${data.correctCount} kişi bildi • ${data.describerName} +${data.describerBonus} bonus puan aldı</p>
+      <p style="margin-top: 8px; color: var(--text-hint);">Sıradaki tur hazırlanıyor...</p>
+    </div>
+  `;
+  renderDescribeScores(data.scores, null);
+});
+
+// Oyun tamamen bitti
+socket.on('describe-game-finished', (data) => {
+  renderDescribeResults(data.results);
+  if (isOwner) {
+    describeRestartBtn.classList.remove('hidden');
+  } else {
+    describeRestartBtn.classList.add('hidden');
+  }
+  showScreen('describe-results-screen');
+  showToast('Oyun bitti! İşte sonuçlar 🏆', 'success');
+});
+
+// Sonuçlar verisi
+socket.on('describe-results-data', (data) => {
+  renderDescribeResults(data.results);
+});
+
+// Chat mesajlarını describe ekranlarına da yolla
+(function patchChatForDescribe() {
+  const originalHandler = socket._callbacks['$chat-message'];
+  // chat-message z.a. önceki handler'da dinleniyor, biz ekliyoruz:
+})();
+
+// Override chat-message to include describe screens
+socket.off('chat-message');
 socket.on('chat-message', (data) => {
   const msgHTML = `
     <div class="chat-message ${data.isSystem ? 'system-msg' : ''}">
@@ -1151,13 +1417,13 @@ socket.on('chat-message', (data) => {
   resultsChatMessages.insertAdjacentHTML('beforeend', msgHTML);
   repostChatMessages.insertAdjacentHTML('beforeend', msgHTML);
   quizChatMessages.insertAdjacentHTML('beforeend', msgHTML);
+  describeWaitingChatMessages.insertAdjacentHTML('beforeend', msgHTML);
+  describeGuessingChatMessages.insertAdjacentHTML('beforeend', msgHTML);
   
   lobbyChatMessages.scrollTop = lobbyChatMessages.scrollHeight;
   resultsChatMessages.scrollTop = resultsChatMessages.scrollHeight;
   repostChatMessages.scrollTop = repostChatMessages.scrollHeight;
   quizChatMessages.scrollTop = quizChatMessages.scrollHeight;
-});
-
-restartGameBtn.addEventListener('click', () => {
-  socket.emit('restart-game');
+  describeWaitingChatMessages.scrollTop = describeWaitingChatMessages.scrollHeight;
+  describeGuessingChatMessages.scrollTop = describeGuessingChatMessages.scrollHeight;
 });

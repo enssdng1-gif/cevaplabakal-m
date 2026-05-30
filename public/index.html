@@ -80,6 +80,11 @@
             <span class="game-name">Repost Bulmaca</span>
             <span class="game-badge">18 Fotoğraf</span>
           </div>
+          <div class="game-type-option" data-type="describe">
+            <span class="game-icon">🕵️</span>
+            <span class="game-name">Kimi Tarif Ediyorum?</span>
+            <span class="game-badge">Yeni!</span>
+          </div>
         </div>
       </div>
       <button id="create-room-submit" class="btn btn-primary btn-full">Odayı Oluştur</button>
@@ -367,6 +372,107 @@
 
   <!-- Bildirim Toast -->
   <div id="toast" class="toast hidden"></div>
+
+  <!-- =============================== -->
+  <!-- KIMI TARIF EDIYORUM EKRANLARI -->
+  <!-- =============================== -->
+
+  <!-- Tanıtıcı Form Ekranı -->
+  <div id="describe-input-screen" class="screen">
+    <div class="card create-card" style="max-width: 500px;">
+      <h2 style="text-align: center; margin-bottom: 20px;">🕵️ Sen Tanıtıcısın!</h2>
+      <p style="text-align: center; color: var(--text-secondary); margin-bottom: 20px;">Bir kişiyi seç ve onu diğer oyunculara tarif et. Tarifini okuyup kim olduğunu bulmaya çalışacaklar!</p>
+      
+      <div class="form-group">
+        <label for="describe-target-input">Kimi Tarif Ediyorsun?</label>
+        <input type="text" id="describe-target-input" placeholder="Örn: Ali Yılmaz" autocomplete="off">
+        <small style="color: var(--text-hint);">Tahmin edenlerin tam olarak bu ismi yazması gerekecek.</small>
+      </div>
+      
+      <div class="form-group">
+        <label for="describe-text-input">Tarif Metni</label>
+        <textarea id="describe-text-input" placeholder="Örn: Gözlüklü, sürekli kahve içen ve mavi kazak giyen arkadaşımız..." rows="4" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-family: inherit; resize: vertical;"></textarea>
+      </div>
+      
+      <button id="describe-submit-btn" class="btn btn-primary btn-full">Gönder ve Süreyi Başlat (15sn)</button>
+    </div>
+  </div>
+
+  <!-- Tanıtıcıyı Bekleme Ekranı -->
+  <div id="describe-waiting-screen" class="screen">
+    <div class="results-container">
+      <h2>⏳ Sıra Bekleniyor...</h2>
+      <div id="describe-waiting-status" class="results-status">Tanıtıcı (<span id="current-describer-name">...</span>) tarifini yazıyor...</div>
+      
+      <!-- Sohbet -->
+      <div class="chat-container">
+        <div class="chat-messages" id="describe-waiting-chat-messages"></div>
+        <div class="chat-input-area">
+          <input type="text" id="describe-waiting-chat-input" placeholder="Sohbet et..." autocomplete="off">
+          <button id="describe-waiting-chat-send-btn" class="btn btn-primary btn-small">Gönder</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tahmin Ekranı (3 Sütunlu) -->
+  <div id="describe-guessing-screen" class="screen">
+    <div class="describe-layout">
+      
+      <!-- Sol: Puan Durumu -->
+      <div class="describe-sidebar">
+        <h3>Puan Durumu</h3>
+        <div id="describe-scores-list" class="describe-scores-list">
+          <!-- Puan listesi dinamik gelecek -->
+        </div>
+      </div>
+      
+      <!-- Orta: Ana Oyun Alanı -->
+      <div class="describe-main">
+        <div class="describe-header">
+          <span class="describer-badge"><span id="guessing-describer-name"></span> Tarif Ediyor:</span>
+          <div class="timer-container">
+            <div id="describe-timer" class="timer-circle">15</div>
+          </div>
+        </div>
+        
+        <div class="describe-card">
+          <p id="describe-text-display" class="describe-text-display">Tarif yükleniyor...</p>
+        </div>
+        
+        <div class="describe-answer-area" id="describe-answer-area">
+          <input type="text" id="describe-guess-input" placeholder="Kim bu? Tahminini yaz..." autocomplete="off">
+          <button id="describe-guess-submit-btn" class="btn btn-primary">Tahmin Et</button>
+        </div>
+        
+        <div id="describe-feedback" class="answer-feedback hidden"></div>
+      </div>
+      
+      <!-- Sağ: Sohbet -->
+      <div class="describe-sidebar describe-chat-sidebar">
+        <h3>Sohbet</h3>
+        <div class="chat-container">
+          <div class="chat-messages" id="describe-guessing-chat-messages"></div>
+          <div class="chat-input-area">
+            <input type="text" id="describe-guessing-chat-input" placeholder="Sohbet et..." autocomplete="off">
+            <button id="describe-guessing-chat-send-btn" class="btn btn-primary btn-small">Gönder</button>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+
+  <!-- Sonuç Ekranı -->
+  <div id="describe-results-screen" class="screen">
+    <div class="repost-results-container">
+      <h2>👑 Oyun Bitti! İşte Sonuçlar</h2>
+      <div id="describe-results-list" class="repost-results-list"></div>
+      
+      <button id="describe-restart-btn" class="btn btn-green btn-full hidden" style="margin-bottom: 10px;">🔄 Yeni Oyun Başlat</button>
+      <button id="describe-back-btn" class="btn btn-primary btn-full">Ana Menüye Dön</button>
+    </div>
+  </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="app.js"></script>

@@ -71,6 +71,77 @@ function startQuizRound(roomId, room) {
   });
 }
 
+// Kimi Tarif Ediyorum - Tur başlat
+function startDescribeTurn(roomId, room) {
+  const describer = room.describeOrder[room.currentDescriberIndex];
+  if (!describer) return;
+
+  room.describeTarget = null;
+  room.describeText = null;
+  room.describeGuessers = [];
+  room.describeCorrectCount = 0;
+
+  // Tanıtıcıya form ekranını gönder
+  io.to(describer.id).emit('describe-your-turn', {
+    turnIndex: room.currentDescriberIndex + 1,
+    totalTurns: room.describeOrder.length
+  });
+
+  // Diğer oyunculara bekleme ekranını gönder
+  room.players.forEach(p => {
+    if (p.id !== describer.id) {
+      io.to(p.id).emit('describe-wait-turn', {
+        describerName: describer.name,
+        turnIndex: room.currentDescriberIndex + 1,
+        totalTurns: room.describeOrder.length
+      });
+    }
+  });
+}
+
+// Kimi Tarif Ediyorum - Tur bitir
+function endDescribeTurn(roomId, room) {
+  // Tanıtıcıya bonus puan ver (bilen kişi sayısı x 2)
+  const describer = room.describeOrder[room.currentDescriberIndex];
+  if (describer && room.describeCorrectCount > 0) {
+    const bonus = room.describeCorrectCount * 2;
+    room.playerScores[describer.id] = (room.playerScores[describer.id] || 0) + bonus;
+  }
+
+  const scores = room.players.map(p => ({
+    id: p.id,
+    name: p.name,
+    score: room.playerScores[p.id] || 0
+  }));
+
+  // Tur sonucunu herkese gönder
+  io.to(roomId).emit('describe-turn-ended', {
+    correctAnswer: room.describeTarget,
+    correctCount: room.describeCorrectCount,
+    describerBonus: room.describeCorrectCount * 2,
+    describerName: describer ? describer.name : '',
+    scores
+  });
+
+  // Sonraki tura geç (3 saniye sonra)
+  setTimeout(() => {
+    room.currentDescriberIndex++;
+    if (room.currentDescriberIndex < room.describeOrder.length) {
+      startDescribeTurn(roomId, room);
+    } else {
+      // Oyun bitti
+      room.status = 'finished';
+      const finalScores = room.players.map(p => ({
+        id: p.id,
+        name: p.name,
+        score: room.playerScores[p.id] || 0
+      }));
+      finalScores.sort((a, b) => b.score - a.score);
+      io.to(roomId).emit('describe-game-finished', { results: finalScores });
+    }
+  }, 3500);
+}
+
 // Repost Bulmaca - Fotoğraf veritabanı
 const repostPhotos = [
   { file: '707990067_935006406230212_2668336883768175161_n.jpg', answer: 'ceyda' },
@@ -383,6 +454,17 @@ io.on('connection', (socket) => {
 
       startRepostRound(currentRoom, room);
       console.log(`Repost Bulmaca başladı (Tur 1): ${currentRoom}`);
+    } else if (room.gameType === 'describe') {
+      // Kimi Tarif Ediyorum modu
+      const order = shuffleArray([...room.players]);
+      room.describeOrder = order;
+      room.currentDescriberIndex = 0;
+      room.describeCorrectCount = 0;
+      room.describeTimer = null;
+      room.describeGuessers = [];
+
+      startDescribeTurn(currentRoom, room);
+      console.log(`Kimi Tarif Ediyorum başladı: ${currentRoom}`);
     } else {
       // Normal quiz modu - Turlu Sistem
       const shuffledQs = shuffleArray(allQuizQuestions);
@@ -662,8 +744,8 @@ io.on('connection', (socket) => {
     const room = rooms.get(currentRoom);
     if (!room) return;
     
-    // Testi bitirmeyenler oyun sırasında konuşamaz
-    if (room.status === 'playing') {
+    // Testi bitirmeyenler oyun sırasında konuşamaz (describe modunda herkes konuşabilir)
+    if (room.status === 'playing' && room.gameType !== 'describe') {
       const isFinished = room.finishedPlayers.find(p => p.id === socket.id);
       if (!isFinished) {
         socket.emit('error-msg', { message: 'Sadece testi bitirenler sohbet edebilir!' });
@@ -678,6 +760,145 @@ io.on('connection', (socket) => {
       message: data.message,
       timestamp: Date.now()
     });
+  });
+
+  // ===== KIMI TARIF EDIYORUM EVENT'LERİ =====
+
+  // Tanıtıcı tarifini gönder
+  socket.on('submit-description', (data) => {
+    if (!currentRoom) return;
+    const room = rooms.get(currentRoom);
+    if (!room || room.status !== 'playing' || room.gameType !== 'describe') return;
+
+    const describer = room.describeOrder[room.currentDescriberIndex];
+    if (!describer || describer.id !== socket.id) return;
+
+    const { target, description } = data;
+    if (!target || !description) return;
+
+    room.describeTarget = target.trim();
+    room.describeText = description.trim();
+    room.describeGuessers = [];
+    room.describeCorrectCount = 0;
+
+    // Puanları skora gönder
+    const scores = room.players.map(p => ({
+      id: p.id,
+      name: p.name,
+      score: room.playerScores[p.id] || 0
+    }));
+
+    // Tüm odaya tahmin ekranını gönder
+    io.to(currentRoom).emit('start-guessing', {
+      describerName: describer.name,
+      describerId: describer.id,
+      description: room.describeText,
+      scores,
+      turnIndex: room.currentDescriberIndex + 1,
+      totalTurns: room.describeOrder.length
+    });
+
+    // 15 saniye geri sayım başlat
+    let timeLeft = 15;
+    room.describeTimer = setInterval(() => {
+      timeLeft--;
+      io.to(currentRoom).emit('describe-timer-tick', { timeLeft });
+      if (timeLeft <= 0) {
+        clearInterval(room.describeTimer);
+        room.describeTimer = null;
+        endDescribeTurn(currentRoom, room);
+      }
+    }, 1000);
+
+    console.log(`${describer.name} tarif gönderdi: ${currentRoom}`);
+  });
+
+  // Tahmin gönder
+  socket.on('submit-describe-guess', (data) => {
+    if (!currentRoom) return;
+    const room = rooms.get(currentRoom);
+    if (!room || room.status !== 'playing' || room.gameType !== 'describe') return;
+
+    const describer = room.describeOrder[room.currentDescriberIndex];
+    if (!describer) return;
+
+    // Tanıtıcı kendisi tahmin edemez
+    if (describer.id === socket.id) return;
+
+    // Zaten tahmin ettiyse
+    if (room.describeGuessers.find(g => g.id === socket.id)) {
+      return socket.emit('describe-guess-locked', { message: 'Zaten tahmin hakkınızı kullandınız!' });
+    }
+
+    const guess = (data.guess || '').trim().toLowerCase();
+    const correctAnswer = (room.describeTarget || '').toLowerCase();
+    const isCorrect = guess === correctAnswer;
+
+    room.describeGuessers.push({
+      id: socket.id,
+      name: playerName,
+      isCorrect
+    });
+
+    if (isCorrect) {
+      room.describeCorrectCount++;
+      const order = room.describeCorrectCount;
+      let points = 1;
+      if (order === 1) points = 5;
+      else if (order === 2) points = 3;
+      else if (order === 3) points = 2;
+
+      room.playerScores[socket.id] = (room.playerScores[socket.id] || 0) + points;
+    }
+
+    // Tahmin sonucunu sadece tahmin edene gönder
+    socket.emit('describe-guess-result', {
+      isCorrect,
+      correctAnswer: room.describeTarget,
+      guess: data.guess
+    });
+
+    // Herkese güncel puanları ve kimin bildiğini yolla
+    const scores = room.players.map(p => ({
+      id: p.id,
+      name: p.name,
+      score: room.playerScores[p.id] || 0
+    }));
+    const guessStatus = room.players.map(p => {
+      if (p.id === describer.id) return { id: p.id, name: p.name, status: 'describer' };
+      const g = room.describeGuessers.find(gg => gg.id === p.id);
+      if (!g) return { id: p.id, name: p.name, status: 'waiting' };
+      return { id: p.id, name: p.name, status: g.isCorrect ? 'correct' : 'wrong' };
+    });
+
+    io.to(currentRoom).emit('describe-scores-update', { scores, guessStatus });
+
+    // Herkes tahmin ettiyse süreyi bitir
+    const nonDescriberCount = room.players.length - 1;
+    if (room.describeGuessers.length >= nonDescriberCount) {
+      if (room.describeTimer) {
+        clearInterval(room.describeTimer);
+        room.describeTimer = null;
+      }
+      // Küçük gecikme ile bitir (animasyonlar için)
+      setTimeout(() => endDescribeTurn(currentRoom, room), 1500);
+    }
+  });
+
+  // Sonuçları getir
+  socket.on('get-describe-results', () => {
+    if (!currentRoom) return;
+    const room = rooms.get(currentRoom);
+    if (!room || room.gameType !== 'describe') return;
+
+    const results = room.players.map(p => ({
+      id: p.id,
+      name: p.name,
+      score: room.playerScores[p.id] || 0
+    }));
+    results.sort((a, b) => b.score - a.score);
+
+    socket.emit('describe-results-data', { results });
   });
 
   // Oyunu yeniden başlat
@@ -697,7 +918,6 @@ io.on('connection', (socket) => {
     });
 
     if (room.gameType === 'repost') {
-      // Yeniden dengeli dağıt ve turlara böl
       const finalPhotos = balancePhotos(repostPhotos, 80);
       const chunks = [];
       for (let i = 0; i < finalPhotos.length; i += 10) {
@@ -705,17 +925,17 @@ io.on('connection', (socket) => {
       }
       room.repostRounds = chunks;
       room.currentRepostRoundIndex = 0;
-
       startRepostRound(currentRoom, room);
-      
-      io.to(currentRoom).emit('chat-message', {
-        sender: 'Sistem',
-        senderId: 'system',
-        message: 'Oyun oda sahibi tarafından yeniden başlatıldı! Repost Bulmaca başlıyor.',
-        timestamp: Date.now(),
-        isSystem: true
-      });
-      console.log(`Repost Bulmaca yeniden başladı: ${currentRoom}`);
+      io.to(currentRoom).emit('chat-message', { sender: 'Sistem', senderId: 'system', message: 'Oyun yeniden başlatıldı! Repost Bulmaca başlıyor.', timestamp: Date.now(), isSystem: true });
+    } else if (room.gameType === 'describe') {
+      const order = shuffleArray([...room.players]);
+      room.describeOrder = order;
+      room.currentDescriberIndex = 0;
+      room.describeCorrectCount = 0;
+      room.describeTimer = null;
+      room.describeGuessers = [];
+      startDescribeTurn(currentRoom, room);
+      io.to(currentRoom).emit('chat-message', { sender: 'Sistem', senderId: 'system', message: 'Oyun yeniden başlatıldı! Kimi Tarif Ediyorum? başlıyor.', timestamp: Date.now(), isSystem: true });
     } else {
       const shuffledQs = shuffleArray(allQuizQuestions);
       const chunks = [];
@@ -724,17 +944,8 @@ io.on('connection', (socket) => {
       }
       room.quizRounds = chunks;
       room.currentQuizRoundIndex = 0;
-
       startQuizRound(currentRoom, room);
-      
-      io.to(currentRoom).emit('chat-message', {
-        sender: 'Sistem',
-        senderId: 'system',
-        message: 'Oyun oda sahibi tarafından yeniden başlatıldı! Soru-Cevap başlıyor.',
-        timestamp: Date.now(),
-        isSystem: true
-      });
-      console.log(`Oyun yeniden başladı (Tur 1): ${currentRoom}`);
+      io.to(currentRoom).emit('chat-message', { sender: 'Sistem', senderId: 'system', message: 'Oyun yeniden başlatıldı! Soru-Cevap başlıyor.', timestamp: Date.now(), isSystem: true });
     }
   });
 
