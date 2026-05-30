@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Arkadaşlarınla oda oluştur, soru-cevap oyunu oyna! Çok oyunculu bilgi yarışması platformu.">
+  <title>Quiz Arena - Çok Oyunculu Bilgi Yarışması</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- EKRAN 1: Hoşgeldiniz -->
+  <div id="welcome-screen" class="screen active">
+    <div class="welcome-container">
+      <h1 id="welcome-text" class="welcome-title">Hoşgeldiniz</h1>
+      <p id="welcome-desc" class="welcome-desc">
+        Arkadaşlarınla oda oluştur, zorlu soruları yanıtla ve en bilgili kim görelim!
+      </p>
+    </div>
+  </div>
+
+  <!-- EKRAN 2: İsim Girişi -->
+  <div id="name-screen" class="screen">
+    <div class="card name-card">
+      <div class="card-icon">👤</div>
+      <h2>İsminizi Girin</h2>
+      <input type="text" id="name-input" placeholder="İsminizi yazın..." maxlength="20" autocomplete="off">
+      <p class="hint-text">(Kendi İsminizi Girmeniz Şiddetle Önerilir)</p>
+      <button id="name-submit-btn" class="btn btn-primary" disabled>Devam Et</button>
+    </div>
+  </div>
+
+  <!-- EKRAN 3: Ana Menü -->
+  <div id="menu-screen" class="screen">
+    <div class="menu-container">
+      <div class="menu-header">
+        <h1 class="logo-text">Quiz Arena</h1>
+        <p class="menu-subtitle" id="player-greeting"></p>
+      </div>
+      <div class="menu-buttons">
+        <button id="create-room-btn" class="btn btn-large btn-blue">
+          <span class="btn-icon">🏠</span>
+          <span class="btn-label">Oda Oluştur</span>
+          <span class="btn-desc">Yeni bir oyun odası oluştur</span>
+        </button>
+        <button id="browse-rooms-btn" class="btn btn-large btn-green">
+          <span class="btn-icon">🔍</span>
+          <span class="btn-label">Odaları Gör</span>
+          <span class="btn-desc">Mevcut odaları ara ve katıl</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EKRAN 4: Oda Oluştur -->
+  <div id="create-room-screen" class="screen">
+    <div class="card create-card">
+      <button class="back-btn" id="create-back-btn">← Geri</button>
+      <h2>🏠 Oda Oluştur</h2>
+      <div class="form-group">
+        <label for="room-name-input">Oda Adı</label>
+        <input type="text" id="room-name-input" placeholder="Oda adını girin..." maxlength="30" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="room-password-input">Oda Şifresi <span class="optional">(İsteğe Bağlı)</span></label>
+        <input type="password" id="room-password-input" placeholder="Şifre belirleyin..." maxlength="20" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>Oyun Türü</label>
+        <div class="game-type-selector">
+          <div class="game-type-option selected">
+            <span class="game-icon">❓</span>
+            <span class="game-name">Soru-Cevap</span>
+            <span class="game-badge">20 Soru</span>
+          </div>
+        </div>
+      </div>
+      <button id="create-room-submit" class="btn btn-primary btn-full">Odayı Oluştur</button>
+    </div>
+  </div>
+
+  <!-- EKRAN 5: Odaları Gör / Ara -->
+  <div id="rooms-screen" class="screen">
+    <div class="rooms-container">
+      <button class="back-btn" id="rooms-back-btn">← Geri</button>
+      <h2>🔍 Odaları Gör</h2>
+      <div class="search-bar">
+        <input type="text" id="room-search-input" placeholder="Oda adı ile ara..." autocomplete="off">
+        <button id="room-search-btn" class="btn btn-small btn-blue">Ara</button>
+      </div>
+      <div id="rooms-list" class="rooms-list">
+        <div class="empty-state">
+          <span class="empty-icon">📭</span>
+          <p>Henüz oda bulunmuyor</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Şifre Modal -->
+    <div id="password-modal" class="modal hidden">
+      <div class="modal-content">
+        <h3>🔒 Şifreli Oda</h3>
+        <p>Bu odaya katılmak için şifre gerekli</p>
+        <input type="password" id="modal-password-input" placeholder="Şifreyi girin..." autocomplete="off">
+        <div class="modal-buttons">
+          <button id="modal-cancel-btn" class="btn btn-small btn-secondary">İptal</button>
+          <button id="modal-join-btn" class="btn btn-small btn-green">Katıl</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EKRAN 6: Oda Lobisi -->
+  <div id="lobby-screen" class="screen">
+    <div class="lobby-container">
+      <div class="lobby-header">
+        <div class="lobby-info">
+          <h2 id="lobby-room-name"></h2>
+          <span class="lobby-badge" id="lobby-room-id"></span>
+        </div>
+        <div class="lobby-actions">
+          <button id="lobby-close-btn" class="btn btn-small btn-red hidden">Odayı Kapat</button>
+          <button id="lobby-leave-btn" class="btn btn-small btn-secondary">Ayrıl</button>
+        </div>
+      </div>
+      
+      <div class="lobby-status">
+        <div class="status-dot waiting"></div>
+        <span id="lobby-status-text">Oda sahibi oyunu başlatmasını bekliyor...</span>
+      </div>
+
+      <div class="player-count">
+        <span id="lobby-player-count">0</span> / <span>15</span> Oyuncu
+      </div>
+
+      <div id="lobby-players" class="players-list"></div>
+
+      <button id="lobby-start-btn" class="btn btn-primary btn-full hidden">🎮 Oyunu Başlat</button>
+    </div>
+  </div>
+
+  <!-- EKRAN 7: Oyun Ekranı -->
+  <div id="game-screen" class="screen">
+    <div class="game-container">
+      <div class="game-header">
+        <div class="question-counter">
+          Soru <span id="current-question-num">1</span> / <span id="total-questions">20</span>
+        </div>
+        <div class="progress-bar">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+      </div>
+
+      <div class="question-card" id="question-card">
+        <p id="question-text" class="question-text"></p>
+      </div>
+
+      <div class="answer-area">
+        <input type="text" id="answer-input" placeholder="Cevabınızı yazın..." autocomplete="off" maxlength="100">
+        <div id="answer-feedback" class="answer-feedback hidden"></div>
+        <div class="answer-buttons">
+          <button id="submit-answer-btn" class="btn btn-primary">Cevapla</button>
+          <button id="skip-question-btn" class="btn btn-secondary">Sonraki →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EKRAN 8: Testi Bitirdin -->
+  <div id="finish-screen" class="screen">
+    <div class="finish-container">
+      <div class="finish-animation">
+        <span class="finish-emoji">🎉</span>
+      </div>
+      <h1 class="finish-title">Testi Tamamladınız!</h1>
+      <p class="finish-desc">Tebrikler! Tüm soruları yanıtladınız.</p>
+      <button id="view-results-btn" class="btn btn-primary btn-large-single">📊 Sonuçları Gör</button>
+    </div>
+  </div>
+
+  <!-- EKRAN 9: Sonuçlar -->
+  <div id="results-screen" class="screen">
+    <div class="results-container">
+      <h2>📊 Sonuçlar</h2>
+      <div id="results-status" class="results-status"></div>
+      <div id="results-list" class="results-list"></div>
+      <button id="results-back-btn" class="btn btn-primary btn-full">Ana Menüye Dön</button>
+    </div>
+
+    <!-- Cevaplar Modal -->
+    <div id="answers-modal" class="modal hidden">
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h3 id="answers-modal-title"></h3>
+          <button id="answers-modal-close" class="modal-close-btn">✕</button>
+        </div>
+        <div id="answers-list" class="answers-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bildirim Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
