@@ -68,7 +68,6 @@ const questionCard = document.getElementById('question-card');
 const questionText = document.getElementById('question-text');
 const answerInput = document.getElementById('answer-input');
 const answerFeedback = document.getElementById('answer-feedback');
-const submitAnswerBtn = document.getElementById('submit-answer-btn');
 const skipQuestionBtn = document.getElementById('skip-question-btn');
 
 // Finish
@@ -384,19 +383,19 @@ function showQuestion() {
   answerFeedback.classList.add('hidden');
   answerInput.focus();
 
-  // Skip button text
+  // Button text
   if (currentQuestionIndex === questions.length - 1) {
     skipQuestionBtn.textContent = 'Testi Bitir ✓';
-    skipQuestionBtn.classList.remove('btn-secondary');
+    skipQuestionBtn.classList.remove('btn-primary');
     skipQuestionBtn.classList.add('btn-green');
   } else {
     skipQuestionBtn.textContent = 'Sonraki →';
-    skipQuestionBtn.classList.add('btn-secondary');
+    skipQuestionBtn.classList.add('btn-primary');
     skipQuestionBtn.classList.remove('btn-green');
   }
 }
 
-submitAnswerBtn.addEventListener('click', submitAnswer);
+skipQuestionBtn.addEventListener('click', submitAnswer);
 answerInput.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') submitAnswer();
 });
@@ -412,23 +411,14 @@ async function submitAnswer() {
 
   if (isSubmitting) return;
   isSubmitting = true;
-  submitAnswerBtn.disabled = true;
-  submitAnswerBtn.innerHTML = '<span class="spinner"></span> Kontrol ediliyor...';
+  skipQuestionBtn.disabled = true;
+  skipQuestionBtn.innerHTML = 'Kontrol ediliyor...';
 
   socket.emit('submit-answer', {
     questionIndex: currentQuestionIndex,
     answer: answer
   });
 }
-
-skipQuestionBtn.addEventListener('click', () => {
-  if (currentQuestionIndex >= questions.length - 1) {
-    finishQuiz();
-  } else {
-    currentQuestionIndex++;
-    showQuestion();
-  }
-});
 
 function finishQuiz() {
   progressFill.style.width = '100%';
@@ -571,30 +561,44 @@ socket.on('game-started', (data) => {
 // Cevap kabul edildi
 socket.on('answer-accepted', (data) => {
   isSubmitting = false;
-  submitAnswerBtn.disabled = false;
-  submitAnswerBtn.textContent = 'Cevapla';
+  skipQuestionBtn.disabled = false;
+  
+  if (currentQuestionIndex === questions.length - 1) {
+    skipQuestionBtn.textContent = 'Testi Bitir ✓';
+  } else {
+    skipQuestionBtn.textContent = 'Sonraki →';
+  }
   
   myAnswers[data.questionIndex] = data.answer;
   
-  answerFeedback.textContent = '✓ Cevap kabul edildi!';
+  answerFeedback.textContent = '✓ Kaydedildi!';
   answerFeedback.className = 'answer-feedback success';
+  answerFeedback.classList.remove('hidden');
   
   setTimeout(() => {
     if (currentQuestionIndex < questions.length - 1) {
       currentQuestionIndex++;
       showQuestion();
+    } else {
+      finishQuiz();
     }
-  }, 800);
+  }, 400);
 });
 
 // Cevap reddedildi
 socket.on('answer-rejected', (data) => {
   isSubmitting = false;
-  submitAnswerBtn.disabled = false;
-  submitAnswerBtn.textContent = 'Cevapla';
+  skipQuestionBtn.disabled = false;
+  
+  if (currentQuestionIndex === questions.length - 1) {
+    skipQuestionBtn.textContent = 'Testi Bitir ✓';
+  } else {
+    skipQuestionBtn.textContent = 'Sonraki →';
+  }
   
   answerFeedback.textContent = `✗ ${data.reason}`;
   answerFeedback.className = 'answer-feedback error';
+  answerFeedback.classList.remove('hidden');
   
   answerInput.style.animation = 'shake 0.4s ease';
   setTimeout(() => answerInput.style.animation = '', 400);
