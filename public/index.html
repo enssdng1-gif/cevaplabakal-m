@@ -152,19 +152,6 @@
       </div>
 
       <button id="lobby-start-btn" class="btn btn-primary btn-full hidden">🎮 Oyunu Başlat</button>
-
-      <!-- Repost Upload Section (Owner Only) -->
-      <div id="repost-upload-section" class="repost-upload-section hidden">
-        <h3 class="upload-title">📸 Repost Fotoğrafları</h3>
-        <p class="upload-desc">Oynamak istediğiniz fotoğrafları seçin ve isimlerini girin.</p>
-        
-        <input type="file" id="repost-file-input" multiple accept="image/*" class="hidden">
-        <button id="repost-select-btn" class="btn btn-secondary btn-full">📁 Fotoğraf Seç</button>
-
-        <div id="repost-preview-list" class="repost-preview-list"></div>
-
-        <button id="repost-upload-start-btn" class="btn btn-primary btn-full hidden">Yükle ve Oyunu Başlat</button>
-      </div>
     </div>
   </div>
 
@@ -216,8 +203,9 @@
     <div class="repost-game-container">
       <div class="repost-header">
         <div class="repost-counter">
-          Fotoğraf <span class="current-num" id="repost-current-num">1</span> / <span id="repost-total-num">18</span>
+          Fotoğraf <span class="current-num" id="repost-current-num">1</span> / <span id="repost-total-num">10</span>
         </div>
+        <span class="repost-round-info"></span>
         <div class="repost-progress-bar">
           <div id="repost-progress-fill" class="repost-progress-fill"></div>
         </div>
@@ -261,12 +249,31 @@
     </div>
   </div>
 
-  <!-- Repost Testi Bitirdin -->
+  <!-- Repost Tur Arası Bekleme ve Sohbet -->
+  <div id="repost-waiting-screen" class="screen">
+    <div class="results-container">
+      <h2>⏳ Sıradaki Tur Bekleniyor...</h2>
+      <div id="repost-waiting-status" class="results-status">Diğer oyuncuların bitirmesi bekleniyor...</div>
+      
+      <!-- Sohbet -->
+      <div class="chat-container">
+        <div class="chat-messages" id="repost-chat-messages"></div>
+        <div class="chat-input-area">
+          <input type="text" id="repost-chat-input" placeholder="Sohbet et..." autocomplete="off">
+          <button id="repost-chat-send-btn" class="btn btn-primary btn-small">Gönder</button>
+        </div>
+      </div>
+
+      <button id="repost-next-round-btn" class="btn btn-green btn-full hidden" style="margin-bottom: 10px;">Sonraki Oyuna Geç</button>
+    </div>
+  </div>
+
+  <!-- Repost Testi Bitirdin (Tamamen) -->
   <div id="repost-finish-screen" class="screen">
     <div class="repost-finish-container">
       <div class="repost-finish-emoji">🏆</div>
       <h1 class="repost-finish-title">Oyun Bitti!</h1>
-      <p class="repost-finish-score">Toplam Puan: <strong id="repost-final-score">0</strong></p>
+      <p class="repost-finish-score">Test tamamlandı, sonuçları görmek için tıkla!</p>
       <button id="repost-view-results-btn" class="btn btn-primary btn-large-single">Sıralamayı Gör</button>
     </div>
   </div>

@@ -2,28 +2,10 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const multer = require('multer');
-const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-
-// Ensure upload directory exists
-const uploadDir = path.join(__dirname, 'public', 'uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
-    }
-});
-const upload = multer({ storage: storage });
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
@@ -83,23 +65,95 @@ function getQuestions(round) {
 
 // Repost Bulmaca - Fotoğraf veritabanı
 const repostPhotos = [
-  { file: '707475620_1533342331914249_7159384094907662995_n.jpg', answer: 'enes' },
-  { file: '712158439_1226741949397809_4401024723693449074_n.jpg', answer: 'enes' },
-  { file: '707842948_36069368626042781_7658150129740875112_n.jpg', answer: 'nergis' },
-  { file: '709405500_3081234488731047_7074074060262491781_n.jpg', answer: 'nergis' },
   { file: '707990067_935006406230212_2668336883768175161_n.jpg', answer: 'ceyda' },
+  { file: '708289280_1405440348013865_767604396719341488_n.jpg', answer: 'ceyda' },
+  { file: '708289280_1511610353849482_5360352173647150663_n.jpg', answer: 'ceyda' },
+  { file: '708792735_880490918416137_2385018582005240632_n.jpg', answer: 'ceyda' },
   { file: '708889876_4524693934523225_4773328969032231606_n.jpg', answer: 'ceyda' },
+  { file: '709634612_1305404494485750_3631968482930178354_n.jpg', answer: 'ceyda' },
+  { file: '710057917_2053430852183934_5266896832339771494_n.jpg', answer: 'ceyda' },
+  { file: '711774697_1305730631077328_6369799507243975475_n.jpg', answer: 'ceyda' },
+  { file: '711885123_1532154195242074_5257170927500983973_n.jpg', answer: 'ceyda' },
   { file: '709782226_982421451308498_7360292453048314791_n.jpg', answer: 'efe' },
   { file: '709980655_878241871961608_5665050889342713714_n.jpg', answer: 'efe' },
+  { file: 'Ekran görüntüsü 2026-05-30 161008.png', answer: 'efe' },
+  { file: 'Ekran görüntüsü 2026-05-30 161019.png', answer: 'efe' },
+  { file: 'Ekran görüntüsü 2026-05-30 161033.png', answer: 'efe' },
+  { file: 'Ekran görüntüsü 2026-05-30 161042.png', answer: 'efe' },
+  { file: 'Ekran görüntüsü 2026-05-30 161058.png', answer: 'efe' },
+  { file: 'Ekran görüntüsü 2026-05-30 161110.png', answer: 'efe' },
+  { file: 'Ekran görüntüsü 2026-05-30 161119.png', answer: 'efe' },
+  { file: 'Ekran görüntüsü 2026-05-30 161130.png', answer: 'efe' },
+  { file: '703110382_967798749353912_8339653513031090203_n.jpg', answer: 'emre' },
+  { file: '703501711_969792859141222_6377167223991994424_n.jpg', answer: 'emre' },
+  { file: '704652093_1731344484548931_2010297192086261605_n.jpg', answer: 'emre' },
+  { file: '705227971_974526905185639_2321115894174303342_n.jpg', answer: 'emre' },
+  { file: '709762401_1375144811103387_7278478810030582644_n.jpg', answer: 'emre' },
+  { file: '710215376_1619930325749292_2841170138680584600_n.jpg', answer: 'emre' },
   { file: '710737710_1496420658883358_2523395995339556873_n.jpg', answer: 'emre' },
   { file: '711135356_1222690723216366_856494303259830602_n.jpg', answer: 'emre' },
+  { file: '707475620_1533342331914249_7159384094907662995_n.jpg', answer: 'enes' },
+  { file: '712158439_1226741949397809_4401024723693449074_n.jpg', answer: 'enes' },
+  { file: 'Ekran görüntüsü 2026-05-30 164503.png', answer: 'enes' },
+  { file: 'Ekran görüntüsü 2026-05-30 164510.png', answer: 'enes' },
+  { file: 'Ekran görüntüsü 2026-05-30 164518.png', answer: 'enes' },
+  { file: 'Ekran görüntüsü 2026-05-30 164525.png', answer: 'enes' },
+  { file: 'Ekran görüntüsü 2026-05-30 164531.png', answer: 'enes' },
+  { file: 'Ekran görüntüsü 2026-05-30 164540.png', answer: 'enes' },
+  { file: 'Ekran görüntüsü 2026-05-30 164547.png', answer: 'enes' },
+  { file: 'Ekran görüntüsü 2026-05-30 164559.png', answer: 'enes' },
   { file: '707125341_1576218014512139_5729708611200865711_n.jpg', answer: 'musa' },
   { file: '707267552_2775167672883604_4299707425369127044_n.jpg', answer: 'musa' },
+  { file: 'Ekran görüntüsü 2026-05-30 163516.png', answer: 'musa' },
+  { file: 'Ekran görüntüsü 2026-05-30 163536.png', answer: 'musa' },
+  { file: 'Ekran görüntüsü 2026-05-30 163545.png', answer: 'musa' },
+  { file: 'Ekran görüntüsü 2026-05-30 163553.png', answer: 'musa' },
+  { file: 'Ekran görüntüsü 2026-05-30 163601.png', answer: 'musa' },
+  { file: 'Ekran görüntüsü 2026-05-30 163610.png', answer: 'musa' },
+  { file: 'Ekran görüntüsü 2026-05-30 163624.png', answer: 'musa' },
+  { file: 'Ekran görüntüsü 2026-05-30 163835.png', answer: 'musa' },
+  { file: 'Ekran görüntüsü 2026-05-30 163846.png', answer: 'musa' },
+  { file: '694714841_1648143996398286_459444052162933938_n.jpg', answer: 'naz' },
+  { file: '702657990_3441123262722937_3542449366085497265_n.jpg', answer: 'naz' },
+  { file: '703913891_1309070194706019_3690769050172976737_n.jpg', answer: 'naz' },
+  { file: '706436836_1650303496180018_1476816649474582395_n.jpg', answer: 'naz' },
+  { file: '706610224_973591512189147_5062789501104369331_n.jpg', answer: 'naz' },
+  { file: '707227544_786948094384678_32746367145694358_n.jpg', answer: 'naz' },
+  { file: '707307609_921349044300791_1863362340343172518_n.jpg', answer: 'naz' },
   { file: '707544472_3546996722117140_2545164829959273981_n.jpg', answer: 'naz' },
   { file: '707930725_1250039480330419_3330030380091924875_n.jpg', answer: 'naz' },
-  { file: '708876812_1718171175849688_5247874808744350295_n.jpg', answer: 'yağmur' },
-  { file: '709225538_1478611464279040_6549281798316128013_n.jpg', answer: 'yağmur' },
+  { file: '708889849_1303476081329353_6209957132692301088_n.jpg', answer: 'naz' },
+  { file: '711065164_1289058439978093_4902467591618249014_n.jpg', answer: 'naz' },
+  { file: '707842948_36069368626042781_7658150129740875112_n.jpg', answer: 'nergis' },
+  { file: '709405500_3081234488731047_7074074060262491781_n.jpg', answer: 'nergis' },
+  { file: 'Ekran görüntüsü 2026-05-30 164144.png', answer: 'nergis' },
+  { file: 'Ekran görüntüsü 2026-05-30 164150.png', answer: 'nergis' },
+  { file: 'Ekran görüntüsü 2026-05-30 164155.png', answer: 'nergis' },
+  { file: 'Ekran görüntüsü 2026-05-30 164202.png', answer: 'nergis' },
+  { file: 'Ekran görüntüsü 2026-05-30 164208.png', answer: 'nergis' },
+  { file: 'Ekran görüntüsü 2026-05-30 164215.png', answer: 'nergis' },
+  { file: 'Ekran görüntüsü 2026-05-30 164226.png', answer: 'nergis' },
+  { file: 'Ekran görüntüsü 2026-05-30 164232.png', answer: 'nergis' },
+  { file: 'Ekran görüntüsü 2026-05-30 164239.png', answer: 'nergis' },
+  { file: '685770590_1285840486863072_6681583986893201720_n.jpg', answer: 'yağmur' },
+  { file: '695011696_1528344445508181_3544693207585126280_n.jpg', answer: 'yağmur' },
+  { file: '695232253_3422803647886466_5636443375573724962_n.jpg', answer: 'yağmur' },
+  { file: '703501711_1364859865551078_932608403372405692_n.jpg', answer: 'yağmur' },
+  { file: '703744235_912793245166467_4356197987698235319_n.jpg', answer: 'yağmur' },
+  { file: '705437811_1121979797048937_7925109003988707354_n.jpg', answer: 'yağmur' },
+  { file: '706236879_2586457885143195_7522255636505435455_n.jpg', answer: 'yağmur' },
+  { file: '706809828_1882317068987781_1046561269553749942_n.jpg', answer: 'yağmur' },
+  { file: '706990300_1951388322248621_7128580819547505857_n.jpg', answer: 'yağmur' },
+  { file: '707048343_1533555988129890_2753863769804358714_n.jpg', answer: 'yağmur' },
+  { file: '708450284_1698824668102389_7162442973119725424_n.jpg', answer: 'yağmur' },
+  { file: '685177503_1314460630162141_5183390757877871796_n.jpg', answer: 'yunus' },
+  { file: '706296854_998274705930041_1002666495939981305_n.jpg', answer: 'yunus' },
+  { file: '706867512_890869793280827_2256786232877618093_n.jpg', answer: 'yunus' },
   { file: '707580228_2057363355133049_6156550600933590971_n.jpg', answer: 'yunus' },
+  { file: '707865984_2446402205838053_8273659836937226998_n.jpg', answer: 'yunus' },
+  { file: '708014864_1544081297466401_315659250232990748_n.jpg', answer: 'yunus' },
+  { file: '708041864_1717834882551930_742729930704332510_n.jpg', answer: 'yunus' },
+  { file: '708852651_2046099962993991_1068760346532175980_n.jpg', answer: 'yunus' },
   { file: '708978765_1315900536556312_2371646116293002854_n.jpg', answer: 'yunus' }
 ];
 
@@ -140,63 +194,54 @@ function generateRoomId() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
+// Fotoğrafları dengeli kırpan fonksiyon
+function balancePhotos(photos, maxLimit = 80) {
+  if (photos.length <= maxLimit) return shuffleArray(photos);
 
-// Fotoğraf yükleme endpoint'i
-app.post('/upload-reposts', upload.array('photos', 50), (req, res) => {
-  const roomId = req.body.roomId;
-  const socketId = req.body.socketId;
-  const answers = JSON.parse(req.body.answers || '[]');
-  
-  if (!roomId || !rooms.has(roomId)) {
-    return res.status(400).json({ success: false, message: 'Geçersiz oda ID.' });
-  }
-  
-  const room = rooms.get(roomId);
-  
-  if (room.owner.id !== socketId) {
-    return res.status(403).json({ success: false, message: 'Sadece oda sahibi başlatabilir.' });
-  }
-
-  if (room.status !== 'waiting') {
-    return res.status(400).json({ success: false, message: 'Oyun zaten başlamış.' });
-  }
-
-  if (!req.files || req.files.length === 0) {
-    return res.status(400).json({ success: false, message: 'Fotoğraf yüklenmedi.' });
-  }
-
-  const newPhotos = req.files.map((file, index) => ({
-    file: file.filename,
-    answer: answers[index] || 'Bilinmiyor',
-    isUploaded: true
-  }));
-
-  room.status = 'playing';
-  room.playerAnswers = {};
-  room.finishedPlayers = [];
-  room.playerScores = {};
-
-  room.players.forEach(p => {
-    room.playerAnswers[p.id] = {};
-    room.playerScores[p.id] = 0;
+  const groups = {};
+  photos.forEach(p => {
+    const key = p.answer.toLowerCase();
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(p);
   });
 
-  room.repostPhotos = shuffleArray(newPhotos);
+  let total = photos.length;
+  while (total > maxLimit) {
+    let maxGroup = null;
+    let maxCount = -1;
+    for (const key in groups) {
+      if (groups[key].length > maxCount) {
+        maxCount = groups[key].length;
+        maxGroup = key;
+      }
+    }
+    groups[maxGroup].pop();
+    total--;
+  }
+
+  const balanced = [];
+  for (const key in groups) {
+    balanced.push(...groups[key]);
+  }
+  return shuffleArray(balanced);
+}
+
+// Repost turunu başlatan yardımcı
+function startRepostRound(roomId, room) {
+  room.status = 'playing';
+  room.finishedPlayers = [];
+  room.repostPhotos = room.repostRounds[room.currentRepostRoundIndex];
   
   io.to(roomId).emit('repost-game-started', {
-    photos: room.repostPhotos.map((p, idx) => ({ 
-      index: idx, 
-      file: p.file,
-      isUploaded: true
-    })),
-    totalPhotos: room.repostPhotos.length
+    photos: room.repostPhotos.map((p, idx) => ({ index: idx, file: p.file })),
+    totalPhotos: room.repostPhotos.length,
+    roundIndex: room.currentRepostRoundIndex + 1,
+    totalRounds: room.repostRounds.length
   });
+}
 
-  console.log(`Repost Bulmaca (Yüklemeli) başladı: ${roomId}`);
-  res.json({ success: true });
-});
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
 
 io.on('connection', (socket) => {
   console.log(`Bağlandı: ${socket.id}`);
@@ -319,13 +364,17 @@ io.on('connection', (socket) => {
     });
 
     if (room.gameType === 'repost') {
-      // Repost Bulmaca modu
-      room.repostPhotos = shuffleArray(repostPhotos);
-      io.to(currentRoom).emit('repost-game-started', {
-        photos: room.repostPhotos.map((p, idx) => ({ index: idx, file: p.file })),
-        totalPhotos: room.repostPhotos.length
-      });
-      console.log(`Repost Bulmaca başladı: ${currentRoom}`);
+      // Repost Bulmaca modu - Turlu Sistem
+      const finalPhotos = balancePhotos(repostPhotos, 80);
+      const chunks = [];
+      for (let i = 0; i < finalPhotos.length; i += 10) {
+        chunks.push(finalPhotos.slice(i, i + 10));
+      }
+      room.repostRounds = chunks;
+      room.currentRepostRoundIndex = 0;
+
+      startRepostRound(currentRoom, room);
+      console.log(`Repost Bulmaca başladı (Tur 1): ${currentRoom}`);
     } else {
       // Normal quiz modu
       room.gameQuestions = getQuestions(room.round);
@@ -399,8 +448,9 @@ io.on('connection', (socket) => {
     const { photoIndex, answer } = data;
     const trimmedAnswer = answer.trim().toLowerCase();
 
-    // Fotoğrafın doğru cevabını bul
-    const photo = room.repostPhotos[photoIndex];
+    // Tüm turlardan düz fotoğraf listesi oluştur ve global index ile bul
+    const allPhotos = room.repostRounds.flat();
+    const photo = allPhotos[photoIndex];
     if (!photo) return;
 
     const correctAnswer = photo.answer.toLowerCase();
@@ -430,7 +480,20 @@ io.on('connection', (socket) => {
     });
   });
 
-  // Repost oyununu bitir
+  // Sonraki Repost turuna geç
+  socket.on('next-repost-round', () => {
+    if (!currentRoom) return;
+    const room = rooms.get(currentRoom);
+    if (!room || room.gameType !== 'repost') return;
+    if (room.owner.id !== socket.id) return;
+
+    if (room.currentRepostRoundIndex + 1 < room.repostRounds.length) {
+      room.currentRepostRoundIndex++;
+      startRepostRound(currentRoom, room);
+    }
+  });
+
+  // Repost oyununu bitir (Turu Bitir)
   socket.on('finish-repost', () => {
     if (!currentRoom) return;
     const room = rooms.get(currentRoom);
@@ -442,27 +505,30 @@ io.on('connection', (socket) => {
     room.finishedPlayers.push({
       id: socket.id,
       name: playerName,
-      finishTime: Date.now(),
-      score: room.playerScores[socket.id] || 0,
-      answers: room.playerAnswers[socket.id] || {}
+      finishTime: Date.now()
     });
+
+    const isLastRound = room.currentRepostRoundIndex + 1 === room.repostRounds.length;
+    const allFinished = room.finishedPlayers.length === room.players.length;
 
     // Tüm odaya bildir
     io.to(currentRoom).emit('repost-player-finished', {
       playerId: socket.id,
       playerName: playerName,
       finishedCount: room.finishedPlayers.length,
-      totalPlayers: room.players.length
+      totalPlayers: room.players.length,
+      allFinished,
+      isLastRound
     });
 
     socket.emit('repost-completed', {
-      message: 'Oyunu tamamladınız!',
-      score: room.playerScores[socket.id] || 0,
-      totalPhotos: room.repostPhotos.length
+      message: 'Turu tamamladınız!',
+      isLastRound,
+      allFinished
     });
   });
 
-  // Repost sonuçlarını getir
+  // Repost sonuçlarını getir (TÜM turların fotoğraflarını topla)
   socket.on('get-repost-results', () => {
     if (!currentRoom) return;
     const room = rooms.get(currentRoom);
@@ -484,24 +550,29 @@ io.on('connection', (socket) => {
     // Puana göre sırala (yüksekten düşüğe)
     results.sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
-      // Puanlar eşitse, erken bitirene öncelik
       if (a.finishTime && b.finishTime) return a.finishTime - b.finishTime;
       if (a.finishTime) return -1;
       if (b.finishTime) return 1;
       return 0;
     });
 
-    // Fotoğraf bilgilerini de gönder (doğru cevaplarla birlikte)
-    const photos = room.repostPhotos.map((p, idx) => ({
-      index: idx,
-      file: p.file,
-      answer: p.answer
-    }));
+    // TÜM turlardan fotoğrafları topla (sıralı global index ile)
+    const allPhotos = [];
+    let globalIdx = 0;
+    for (const chunk of room.repostRounds) {
+      for (const p of chunk) {
+        allPhotos.push({
+          index: globalIdx++,
+          file: p.file,
+          answer: p.answer
+        });
+      }
+    }
 
     socket.emit('repost-results-data', {
       results,
-      photos,
-      totalPhotos: room.repostPhotos.length,
+      photos: allPhotos,
+      totalPhotos: allPhotos.length,
       finishedCount: room.finishedPlayers.length,
       totalPlayers: room.players.length
     });
@@ -590,12 +661,16 @@ io.on('connection', (socket) => {
     });
 
     if (room.gameType === 'repost') {
-      room.repostPhotos = shuffleArray(repostPhotos);
-      io.to(currentRoom).emit('repost-game-started', {
-        photos: room.repostPhotos.map((p, idx) => ({ index: idx, file: p.file })),
-        totalPhotos: room.repostPhotos.length,
-        isRestart: true
-      });
+      // Yeniden dengeli dağıt ve turlara böl
+      const finalPhotos = balancePhotos(repostPhotos, 80);
+      const chunks = [];
+      for (let i = 0; i < finalPhotos.length; i += 10) {
+        chunks.push(finalPhotos.slice(i, i + 10));
+      }
+      room.repostRounds = chunks;
+      room.currentRepostRoundIndex = 0;
+
+      startRepostRound(currentRoom, room);
       
       io.to(currentRoom).emit('chat-message', {
         sender: 'Sistem',
@@ -606,7 +681,7 @@ io.on('connection', (socket) => {
       });
       console.log(`Repost Bulmaca yeniden başladı: ${currentRoom}`);
     } else {
-      room.round = room.round === 1 ? 2 : 1; // Tur değiştir
+      room.round = room.round === 1 ? 2 : 1;
       room.gameQuestions = getQuestions(room.round);
 
       io.to(currentRoom).emit('game-started', { 

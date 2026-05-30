@@ -2563,3 +2563,19 @@ input[type="password"]::placeholder {
     height: 48px;
   }
 }
+
+/* Round Info */
+.repost-round-info {
+  display: block;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--blue);
+  font-weight: 600;
+  margin-bottom: 8px;
+  background: var(--blue-glow);
+  padding: 4px 12px;
+  border-radius: var(--radius-xl);
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
