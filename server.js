@@ -341,6 +341,7 @@ io.on('connection', (socket) => {
       password: data.password || null,
       hasPassword: !!data.password,
       gameType: data.gameType || 'quiz',
+      settings: data.gameSettings || { settingValue: 40 },
       round: 1,
       owner: { id: socket.id, name: playerName },
       players: [{ id: socket.id, name: playerName }],
@@ -444,7 +445,8 @@ io.on('connection', (socket) => {
 
     if (room.gameType === 'repost') {
       // Repost Bulmaca modu - Turlu Sistem
-      const finalPhotos = balancePhotos(repostPhotos, 80);
+      const photoLimit = room.settings.settingValue || 40;
+      const finalPhotos = balancePhotos(repostPhotos, photoLimit);
       const chunks = [];
       for (let i = 0; i < finalPhotos.length; i += 10) {
         chunks.push(finalPhotos.slice(i, i + 10));
@@ -462,12 +464,14 @@ io.on('connection', (socket) => {
       room.describeCorrectCount = 0;
       room.describeTimer = null;
       room.describeGuessers = [];
+      room.settings.timerDuration = room.settings.settingValue || 60;
 
       startDescribeTurn(currentRoom, room);
       console.log(`Kimi Tarif Ediyorum başladı: ${currentRoom}`);
     } else {
       // Normal quiz modu - Turlu Sistem
-      const shuffledQs = shuffleArray(allQuizQuestions);
+      const qLimit = room.settings.settingValue || 40;
+      const shuffledQs = shuffleArray(allQuizQuestions).slice(0, qLimit);
       const chunks = [];
       for (let i = 0; i < shuffledQs.length; i += 10) {
         chunks.push(shuffledQs.slice(i, i + 10));
@@ -798,8 +802,8 @@ io.on('connection', (socket) => {
       totalTurns: room.describeOrder.length
     });
 
-    // 15 saniye geri sayım başlat
-    let timeLeft = 15;
+    // Ayarlanan süre limitinden geri sayım başlat
+    let timeLeft = room.settings.timerDuration || 60;
     room.describeTimer = setInterval(() => {
       timeLeft--;
       io.to(currentRoom).emit('describe-timer-tick', { timeLeft });
@@ -918,7 +922,8 @@ io.on('connection', (socket) => {
     });
 
     if (room.gameType === 'repost') {
-      const finalPhotos = balancePhotos(repostPhotos, 80);
+      const photoLimit = room.settings.settingValue || 40;
+      const finalPhotos = balancePhotos(repostPhotos, photoLimit);
       const chunks = [];
       for (let i = 0; i < finalPhotos.length; i += 10) {
         chunks.push(finalPhotos.slice(i, i + 10));
@@ -934,10 +939,12 @@ io.on('connection', (socket) => {
       room.describeCorrectCount = 0;
       room.describeTimer = null;
       room.describeGuessers = [];
+      room.settings.timerDuration = room.settings.settingValue || 60;
       startDescribeTurn(currentRoom, room);
       io.to(currentRoom).emit('chat-message', { sender: 'Sistem', senderId: 'system', message: 'Oyun yeniden başlatıldı! Kimi Tarif Ediyorum? başlıyor.', timestamp: Date.now(), isSystem: true });
     } else {
-      const shuffledQs = shuffleArray(allQuizQuestions);
+      const qLimit = room.settings.settingValue || 40;
+      const shuffledQs = shuffleArray(allQuizQuestions).slice(0, qLimit);
       const chunks = [];
       for (let i = 0; i < shuffledQs.length; i += 10) {
         chunks.push(shuffledQs.slice(i, i + 10));

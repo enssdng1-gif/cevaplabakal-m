@@ -87,6 +87,14 @@
           </div>
         </div>
       </div>
+      
+      <!-- Oyun Ayarları Paneli -->
+      <div id="game-settings-container" class="form-group" style="display: none; animation: slideDown 0.3s ease;">
+        <label id="game-settings-label">Soru Sayısı</label>
+        <div id="game-settings-options" class="settings-options-grid">
+          <!-- Dinamik olarak doldurulacak -->
+        </div>
+      </div>
       <button id="create-room-submit" class="btn btn-primary btn-full">Odayı Oluştur</button>
     </div>
   </div>
@@ -118,6 +126,15 @@
           <button id="modal-cancel-btn" class="btn btn-small btn-secondary">İptal</button>
           <button id="modal-join-btn" class="btn btn-small btn-green">Katıl</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Uyarı Modal (Sohbet Arası vb.) -->
+    <div id="info-modal" class="modal hidden">
+      <div class="modal-content" style="text-align: center; max-width: 400px;">
+        <h3 style="font-size: 1.5rem; margin-bottom: 12px;">ℹ️ Bilgilendirme</h3>
+        <p id="info-modal-text" style="font-size: 1.05rem; line-height: 1.5; color: var(--text-primary); margin-bottom: 24px;">Her 10 soruda bir sohbet arası verilecektir. İstediğiniz zaman başlatabilirsiniz!</p>
+        <button id="info-modal-ok-btn" class="btn btn-primary btn-full">Tamam</button>
       </div>
     </div>
   </div>

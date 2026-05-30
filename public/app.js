@@ -49,6 +49,21 @@ const roomNameInput = document.getElementById('room-name-input');
 const roomPasswordInput = document.getElementById('room-password-input');
 const createRoomSubmit = document.getElementById('create-room-submit');
 
+// Game Settings
+const gameSettingsContainer = document.getElementById('game-settings-container');
+const gameSettingsLabel = document.getElementById('game-settings-label');
+const gameSettingsOptions = document.getElementById('game-settings-options');
+const infoModal = document.getElementById('info-modal');
+const infoModalText = document.getElementById('info-modal-text');
+const infoModalOkBtn = document.getElementById('info-modal-ok-btn');
+
+let selectedGameSetting = 40;
+const gameSettingsConfig = {
+  quiz: { label: 'Soru Sayısı', options: [10, 20, 30, 40], default: 40, suffix: ' Soru' },
+  repost: { label: 'Fotoğraf Sayısı', options: [10, 20, 30, 40, 50, 60, 70, 80, 89], default: 40, suffix: ' Foto' },
+  describe: { label: 'Süre Limiti', options: [15, 30, 60, 120, 180, 240, 300], labels: ['15sn', '30sn', '1dk', '2dk', '3dk', '4dk', '5dk'], default: 60, suffix: '' }
+};
+
 // Rooms
 const roomsScreen = document.getElementById('rooms-screen');
 const roomsBackBtn = document.getElementById('rooms-back-btn');
@@ -280,13 +295,51 @@ browseRoomsBtn.addEventListener('click', () => {
 createBackBtn.addEventListener('click', () => showScreen('menu-screen'));
 
 const gameTypeOptions = document.querySelectorAll('.game-type-option');
+
+function renderGameSettings(type) {
+  const config = gameSettingsConfig[type];
+  if (!config) {
+    gameSettingsContainer.style.display = 'none';
+    return;
+  }
+  
+  gameSettingsContainer.style.display = 'block';
+  gameSettingsLabel.textContent = config.label;
+  selectedGameSetting = config.default;
+  
+  gameSettingsOptions.innerHTML = '';
+  config.options.forEach((opt, index) => {
+    const btn = document.createElement('div');
+    btn.className = 'setting-btn' + (opt === selectedGameSetting ? ' selected' : '');
+    btn.textContent = (config.labels ? config.labels[index] : opt) + config.suffix;
+    btn.onclick = () => {
+      document.querySelectorAll('.setting-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedGameSetting = opt;
+      
+      if (type === 'quiz' || type === 'repost') {
+        infoModal.classList.remove('hidden');
+      }
+    };
+    gameSettingsOptions.appendChild(btn);
+  });
+}
+
+infoModalOkBtn.addEventListener('click', () => {
+  infoModal.classList.add('hidden');
+});
+
 gameTypeOptions.forEach(opt => {
   opt.addEventListener('click', () => {
     gameTypeOptions.forEach(o => o.classList.remove('selected'));
     opt.classList.add('selected');
     selectedGameType = opt.dataset.type;
+    renderGameSettings(selectedGameType);
   });
 });
+
+// Initialize with default
+renderGameSettings(selectedGameType);
 
 createRoomSubmit.addEventListener('click', () => {
   const roomName = roomNameInput.value.trim();
@@ -300,7 +353,8 @@ createRoomSubmit.addEventListener('click', () => {
   socket.emit('create-room', {
     roomName: roomName,
     password: roomPasswordInput.value.trim() || null,
-    gameType: selectedGameType
+    gameType: selectedGameType,
+    gameSettings: { settingValue: selectedGameSetting }
   });
 });
 
