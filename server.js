@@ -2,10 +2,28 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const multer = require('multer');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+
+// Ensure upload directory exists
+const uploadDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
@@ -123,6 +141,62 @@ function generateRoomId() {
 }
 
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
+
+// Fotoğraf yükleme endpoint'i
+app.post('/upload-reposts', upload.array('photos', 50), (req, res) => {
+  const roomId = req.body.roomId;
+  const socketId = req.body.socketId;
+  const answers = JSON.parse(req.body.answers || '[]');
+  
+  if (!roomId || !rooms.has(roomId)) {
+    return res.status(400).json({ success: false, message: 'Geçersiz oda ID.' });
+  }
+  
+  const room = rooms.get(roomId);
+  
+  if (room.owner.id !== socketId) {
+    return res.status(403).json({ success: false, message: 'Sadece oda sahibi başlatabilir.' });
+  }
+
+  if (room.status !== 'waiting') {
+    return res.status(400).json({ success: false, message: 'Oyun zaten başlamış.' });
+  }
+
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ success: false, message: 'Fotoğraf yüklenmedi.' });
+  }
+
+  const newPhotos = req.files.map((file, index) => ({
+    file: file.filename,
+    answer: answers[index] || 'Bilinmiyor',
+    isUploaded: true
+  }));
+
+  room.status = 'playing';
+  room.playerAnswers = {};
+  room.finishedPlayers = [];
+  room.playerScores = {};
+
+  room.players.forEach(p => {
+    room.playerAnswers[p.id] = {};
+    room.playerScores[p.id] = 0;
+  });
+
+  room.repostPhotos = shuffleArray(newPhotos);
+  
+  io.to(roomId).emit('repost-game-started', {
+    photos: room.repostPhotos.map((p, idx) => ({ 
+      index: idx, 
+      file: p.file,
+      isUploaded: true
+    })),
+    totalPhotos: room.repostPhotos.length
+  });
+
+  console.log(`Repost Bulmaca (Yüklemeli) başladı: ${roomId}`);
+  res.json({ success: true });
+});
 
 io.on('connection', (socket) => {
   console.log(`Bağlandı: ${socket.id}`);

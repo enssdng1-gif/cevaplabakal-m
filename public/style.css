@@ -2011,6 +2011,77 @@ input[type="password"]::placeholder {
   pointer-events: none;
 }
 
+/* Repost Upload Section */
+.repost-upload-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.upload-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #a78bfa;
+}
+
+.upload-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.repost-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 16px 0;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.repost-preview-item {
+  display: flex;
+  gap: 12px;
+  background: var(--bg-input);
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  align-items: center;
+}
+
+.repost-preview-img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+  background: #000;
+}
+
+.repost-preview-input {
+  flex: 1;
+  padding: 10px;
+  font-size: 0.95rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.repost-preview-remove {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--red);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: bold;
+}
+
 /* Repost Game Screen */
 .repost-game-container {
   width: 100%;
