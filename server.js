@@ -63,6 +63,38 @@ function getQuestions(round) {
   return questionsRound1;
 }
 
+// Repost Bulmaca - Fotoğraf veritabanı
+const repostPhotos = [
+  { file: '707475620_1533342331914249_7159384094907662995_n.jpg', answer: 'enes' },
+  { file: '712158439_1226741949397809_4401024723693449074_n.jpg', answer: 'enes' },
+  { file: '707842948_36069368626042781_7658150129740875112_n.jpg', answer: 'nergis' },
+  { file: '709405500_3081234488731047_7074074060262491781_n.jpg', answer: 'nergis' },
+  { file: '707990067_935006406230212_2668336883768175161_n.jpg', answer: 'ceyda' },
+  { file: '708889876_4524693934523225_4773328969032231606_n.jpg', answer: 'ceyda' },
+  { file: '709782226_982421451308498_7360292453048314791_n.jpg', answer: 'efe' },
+  { file: '709980655_878241871961608_5665050889342713714_n.jpg', answer: 'efe' },
+  { file: '710737710_1496420658883358_2523395995339556873_n.jpg', answer: 'emre' },
+  { file: '711135356_1222690723216366_856494303259830602_n.jpg', answer: 'emre' },
+  { file: '707125341_1576218014512139_5729708611200865711_n.jpg', answer: 'musa' },
+  { file: '707267552_2775167672883604_4299707425369127044_n.jpg', answer: 'musa' },
+  { file: '707544472_3546996722117140_2545164829959273981_n.jpg', answer: 'naz' },
+  { file: '707930725_1250039480330419_3330030380091924875_n.jpg', answer: 'naz' },
+  { file: '708876812_1718171175849688_5247874808744350295_n.jpg', answer: 'yağmur' },
+  { file: '709225538_1478611464279040_6549281798316128013_n.jpg', answer: 'yağmur' },
+  { file: '707580228_2057363355133049_6156550600933590971_n.jpg', answer: 'yunus' },
+  { file: '708978765_1315900536556312_2371646116293002854_n.jpg', answer: 'yunus' }
+];
+
+// Fisher-Yates shuffle
+function shuffleArray(arr) {
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 // Oda yönetimi
 const rooms = new Map();
 
@@ -204,18 +236,30 @@ io.on('connection', (socket) => {
     room.status = 'playing';
     room.playerAnswers = {};
     room.finishedPlayers = [];
-    room.gameQuestions = getQuestions(room.round);
+    room.playerScores = {};
 
-    // Her oyuncu için boş cevap objesi oluştur
+    // Her oyuncu için boş cevap objesi ve skor oluştur
     room.players.forEach(p => {
       room.playerAnswers[p.id] = {};
+      room.playerScores[p.id] = 0;
     });
 
-    io.to(currentRoom).emit('game-started', { 
-      questions: room.gameQuestions.map(q => ({ id: q.id, question: q.question }))
-    });
-
-    console.log(`Oyun başladı: ${currentRoom}`);
+    if (room.gameType === 'repost') {
+      // Repost Bulmaca modu
+      room.repostPhotos = shuffleArray(repostPhotos);
+      io.to(currentRoom).emit('repost-game-started', {
+        photos: room.repostPhotos.map((p, idx) => ({ index: idx, file: p.file })),
+        totalPhotos: room.repostPhotos.length
+      });
+      console.log(`Repost Bulmaca başladı: ${currentRoom}`);
+    } else {
+      // Normal quiz modu
+      room.gameQuestions = getQuestions(room.round);
+      io.to(currentRoom).emit('game-started', { 
+        questions: room.gameQuestions.map(q => ({ id: q.id, question: q.question }))
+      });
+      console.log(`Oyun başladı: ${currentRoom}`);
+    }
   });
 
   // Cevap gönder
@@ -268,6 +312,125 @@ io.on('connection', (socket) => {
     });
 
     socket.emit('quiz-completed', { message: 'Testi tamamladınız!' });
+  });
+
+  // ===== REPOST BULMACA EVENT'LERİ =====
+
+  // Repost cevap gönder
+  socket.on('submit-repost-answer', (data) => {
+    if (!currentRoom) return;
+    const room = rooms.get(currentRoom);
+    if (!room || room.status !== 'playing' || room.gameType !== 'repost') return;
+
+    const { photoIndex, answer } = data;
+    const trimmedAnswer = answer.trim().toLowerCase();
+
+    // Fotoğrafın doğru cevabını bul
+    const photo = room.repostPhotos[photoIndex];
+    if (!photo) return;
+
+    const correctAnswer = photo.answer.toLowerCase();
+    const isCorrect = trimmedAnswer === correctAnswer;
+
+    // Cevabı kaydet
+    if (!room.playerAnswers[socket.id]) {
+      room.playerAnswers[socket.id] = {};
+    }
+    room.playerAnswers[socket.id][photoIndex] = {
+      given: answer.trim(),
+      correct: isCorrect
+    };
+
+    // Puan ver
+    if (isCorrect) {
+      if (!room.playerScores[socket.id]) room.playerScores[socket.id] = 0;
+      room.playerScores[socket.id]++;
+    }
+
+    socket.emit('repost-answer-result', {
+      photoIndex,
+      isCorrect,
+      correctAnswer: photo.answer,
+      givenAnswer: answer.trim(),
+      currentScore: room.playerScores[socket.id] || 0
+    });
+  });
+
+  // Repost oyununu bitir
+  socket.on('finish-repost', () => {
+    if (!currentRoom) return;
+    const room = rooms.get(currentRoom);
+    if (!room || room.status !== 'playing' || room.gameType !== 'repost') return;
+
+    // Zaten bitirmiş mi kontrol et
+    if (room.finishedPlayers.find(p => p.id === socket.id)) return;
+
+    room.finishedPlayers.push({
+      id: socket.id,
+      name: playerName,
+      finishTime: Date.now(),
+      score: room.playerScores[socket.id] || 0,
+      answers: room.playerAnswers[socket.id] || {}
+    });
+
+    // Tüm odaya bildir
+    io.to(currentRoom).emit('repost-player-finished', {
+      playerId: socket.id,
+      playerName: playerName,
+      finishedCount: room.finishedPlayers.length,
+      totalPlayers: room.players.length
+    });
+
+    socket.emit('repost-completed', {
+      message: 'Oyunu tamamladınız!',
+      score: room.playerScores[socket.id] || 0,
+      totalPhotos: room.repostPhotos.length
+    });
+  });
+
+  // Repost sonuçlarını getir
+  socket.on('get-repost-results', () => {
+    if (!currentRoom) return;
+    const room = rooms.get(currentRoom);
+    if (!room || room.gameType !== 'repost') return;
+
+    // Tüm oyuncuları puana göre sırala
+    const results = room.players.map(p => {
+      const finished = room.finishedPlayers.find(fp => fp.id === p.id);
+      return {
+        id: p.id,
+        name: p.name,
+        isFinished: !!finished,
+        score: room.playerScores[p.id] || 0,
+        answers: room.playerAnswers[p.id] || {},
+        finishTime: finished ? finished.finishTime : null
+      };
+    });
+
+    // Puana göre sırala (yüksekten düşüğe)
+    results.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      // Puanlar eşitse, erken bitirene öncelik
+      if (a.finishTime && b.finishTime) return a.finishTime - b.finishTime;
+      if (a.finishTime) return -1;
+      if (b.finishTime) return 1;
+      return 0;
+    });
+
+    // Fotoğraf bilgilerini de gönder (doğru cevaplarla birlikte)
+    const photos = room.repostPhotos.map((p, idx) => ({
+      index: idx,
+      file: p.file,
+      answer: p.answer
+    }));
+
+    socket.emit('repost-results-data', {
+      results,
+      photos,
+      totalPhotos: room.repostPhotos.length,
+      finishedCount: room.finishedPlayers.length,
+      totalPlayers: room.players.length
+    });
   });
 
   // Sonuçları getir
@@ -342,30 +505,50 @@ io.on('connection', (socket) => {
     const room = rooms.get(currentRoom);
     if (!room || room.owner.id !== socket.id) return;
     
-    room.round = room.round === 1 ? 2 : 1; // Tur değiştir
     room.status = 'playing';
     room.playerAnswers = {};
     room.finishedPlayers = [];
-    room.gameQuestions = getQuestions(room.round);
+    room.playerScores = {};
 
     room.players.forEach(p => {
       room.playerAnswers[p.id] = {};
+      room.playerScores[p.id] = 0;
     });
 
-    io.to(currentRoom).emit('game-started', { 
-      questions: room.gameQuestions.map(q => ({ id: q.id, question: q.question })),
-      isRestart: true
-    });
-    
-    io.to(currentRoom).emit('chat-message', {
-      sender: 'Sistem',
-      senderId: 'system',
-      message: `Oyun oda sahibi tarafından yeniden başlatıldı! ${room.round}. Tur başlıyor.`,
-      timestamp: Date.now(),
-      isSystem: true
-    });
+    if (room.gameType === 'repost') {
+      room.repostPhotos = shuffleArray(repostPhotos);
+      io.to(currentRoom).emit('repost-game-started', {
+        photos: room.repostPhotos.map((p, idx) => ({ index: idx, file: p.file })),
+        totalPhotos: room.repostPhotos.length,
+        isRestart: true
+      });
+      
+      io.to(currentRoom).emit('chat-message', {
+        sender: 'Sistem',
+        senderId: 'system',
+        message: 'Oyun oda sahibi tarafından yeniden başlatıldı! Repost Bulmaca başlıyor.',
+        timestamp: Date.now(),
+        isSystem: true
+      });
+      console.log(`Repost Bulmaca yeniden başladı: ${currentRoom}`);
+    } else {
+      room.round = room.round === 1 ? 2 : 1; // Tur değiştir
+      room.gameQuestions = getQuestions(room.round);
 
-    console.log(`Oyun yeniden başladı (Tur ${room.round}): ${currentRoom}`);
+      io.to(currentRoom).emit('game-started', { 
+        questions: room.gameQuestions.map(q => ({ id: q.id, question: q.question })),
+        isRestart: true
+      });
+      
+      io.to(currentRoom).emit('chat-message', {
+        sender: 'Sistem',
+        senderId: 'system',
+        message: `Oyun oda sahibi tarafından yeniden başlatıldı! ${room.round}. Tur başlıyor.`,
+        timestamp: Date.now(),
+        isSystem: true
+      });
+      console.log(`Oyun yeniden başladı (Tur ${room.round}): ${currentRoom}`);
+    }
   });
 
   // Odaları listele

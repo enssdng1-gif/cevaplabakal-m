@@ -11,6 +11,12 @@ let currentQuestionIndex = 0;
 let myAnswers = {};
 let isSubmitting = false;
 
+// ===== REPOST STATE =====
+let selectedGameType = 'quiz';
+let repostPhotos = [];
+let currentPhotoIndex = 0;
+let repostScore = 0;
+
 // ===== DOM ELEMENTS =====
 const screens = document.querySelectorAll('.screen');
 
@@ -87,6 +93,38 @@ const answersList = document.getElementById('answers-list');
 // Toast
 const toast = document.getElementById('toast');
 
+// ===== REPOST DOM ELEMENTS =====
+const repostWelcomeScreen = document.getElementById('repost-welcome-screen');
+const startRepostBtn = document.getElementById('start-repost-btn');
+
+const repostGameScreen = document.getElementById('repost-game-screen');
+const repostCurrentNum = document.getElementById('repost-current-num');
+const repostTotalNum = document.getElementById('repost-total-num');
+const repostProgressFill = document.getElementById('repost-progress-fill');
+const repostCurrentScore = document.getElementById('repost-current-score');
+const repostPhotoBadge = document.getElementById('repost-photo-badge');
+const repostPhotoImg = document.getElementById('repost-photo-img');
+const repostAnswerInput = document.getElementById('repost-answer-input');
+const repostSubmitBtn = document.getElementById('repost-submit-btn');
+const repostFeedback = document.getElementById('repost-feedback');
+const repostNavButtons = document.getElementById('repost-nav-buttons');
+const repostNextBtn = document.getElementById('repost-next-btn');
+
+const repostFinishScreen = document.getElementById('repost-finish-screen');
+const repostFinalScore = document.getElementById('repost-final-score');
+const repostViewResultsBtn = document.getElementById('repost-view-results-btn');
+
+const repostResultsScreen = document.getElementById('repost-results-screen');
+const repostResultsStatus = document.getElementById('repost-results-status');
+const repostResultsList = document.getElementById('repost-results-list');
+const repostRestartBtn = document.getElementById('repost-restart-btn');
+const repostBackBtn = document.getElementById('repost-back-btn');
+
+const repostAnswersModal = document.getElementById('repost-answers-modal');
+const repostAnswersModalTitle = document.getElementById('repost-answers-modal-title');
+const repostAnswersModalClose = document.getElementById('repost-answers-modal-close');
+const repostAnswersList = document.getElementById('repost-answers-list');
+
 // Chat & Restart
 const lobbyChatMessages = document.getElementById('lobby-chat-messages');
 const lobbyChatInput = document.getElementById('lobby-chat-input');
@@ -99,10 +137,46 @@ const resultsChatSendBtn = document.getElementById('results-chat-send-btn');
 const restartGameBtn = document.getElementById('restart-game-btn');
 
 // ===== HELPERS =====
-function showScreen(id) {
+function showScreen(id, ignoreHistory = false) {
   screens.forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  
+  if (!ignoreHistory) {
+    history.pushState({ screen: id }, '', window.location.href);
+  }
 }
+
+// Geri tuşu (mobil/tarayıcı) kontrolü
+window.addEventListener('popstate', (e) => {
+  if (currentRoom) {
+    const leave = confirm('Oyundan çıkmak istediğinize emin misiniz? İlerlemeniz kaybolacak.');
+    if (leave) {
+      socket.emit('leave-room');
+      currentRoom = null;
+      isOwner = false;
+      showScreen('menu-screen', true);
+    } else {
+      // Çıkışı iptal et, bulunduğumuz sayfada kal
+      const activeScreen = document.querySelector('.screen.active');
+      history.pushState({ screen: activeScreen ? activeScreen.id : 'menu-screen' }, '', window.location.href);
+    }
+  } else {
+    // Odada değilse bir önceki ekrana dön
+    if (e.state && e.state.screen) {
+      showScreen(e.state.screen, true);
+    } else {
+      showScreen('welcome-screen', true);
+    }
+  }
+});
+
+// Sayfayı yenileme veya kapatma kontrolü
+window.addEventListener('beforeunload', (e) => {
+  if (currentRoom) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
 
 let toastTimeout;
 function showToast(message, type = 'info') {
@@ -177,6 +251,15 @@ browseRoomsBtn.addEventListener('click', () => {
 // ===== CREATE ROOM =====
 createBackBtn.addEventListener('click', () => showScreen('menu-screen'));
 
+const gameTypeOptions = document.querySelectorAll('.game-type-option');
+gameTypeOptions.forEach(opt => {
+  opt.addEventListener('click', () => {
+    gameTypeOptions.forEach(o => o.classList.remove('selected'));
+    opt.classList.add('selected');
+    selectedGameType = opt.dataset.type;
+  });
+});
+
 createRoomSubmit.addEventListener('click', () => {
   const roomName = roomNameInput.value.trim();
   if (!roomName) {
@@ -189,7 +272,7 @@ createRoomSubmit.addEventListener('click', () => {
   socket.emit('create-room', {
     roomName: roomName,
     password: roomPasswordInput.value.trim() || null,
-    gameType: 'quiz'
+    gameType: selectedGameType
   });
 });
 
@@ -232,7 +315,7 @@ function renderRooms(roomsData) {
         <div class="room-meta">
           <span>👤 ${room.ownerName}</span>
           <span>👥 ${room.playerCount}/${room.maxPlayers}</span>
-          <span>🎮 Soru-Cevap</span>
+          <span>🎮 ${room.gameType === 'repost' ? 'Repost Bulmaca' : 'Soru-Cevap'}</span>
         </div>
       </div>
       ${room.hasPassword ? 
@@ -426,6 +509,217 @@ function finishQuiz() {
   showScreen('finish-screen');
 }
 
+// ===== REPOST GAME LOGIC =====
+startRepostBtn.addEventListener('click', () => {
+  showRepostPhoto();
+  showScreen('repost-game-screen');
+});
+
+function showRepostPhoto() {
+  if (currentPhotoIndex >= repostPhotos.length) {
+    socket.emit('finish-repost');
+    return;
+  }
+
+  const p = repostPhotos[currentPhotoIndex];
+  repostCurrentNum.textContent = currentPhotoIndex + 1;
+  repostProgressFill.style.width = `${((currentPhotoIndex) / repostPhotos.length) * 100}%`;
+  repostPhotoBadge.textContent = `#${currentPhotoIndex + 1}`;
+  repostPhotoImg.src = `/photos/${p.file}`;
+  
+  repostAnswerInput.value = '';
+  repostAnswerInput.disabled = false;
+  repostSubmitBtn.disabled = false;
+  repostFeedback.classList.add('hidden');
+  repostNavButtons.classList.add('hidden');
+  
+  setTimeout(() => repostAnswerInput.focus(), 100);
+}
+
+repostSubmitBtn.addEventListener('click', submitRepostAnswer);
+repostAnswerInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') submitRepostAnswer();
+});
+
+function submitRepostAnswer() {
+  const answer = repostAnswerInput.value.trim();
+  if (!answer) {
+    showToast('Bir isim giriniz!', 'error');
+    repostAnswerInput.style.animation = 'shake 0.4s ease';
+    setTimeout(() => repostAnswerInput.style.animation = '', 400);
+    return;
+  }
+
+  if (isSubmitting) return;
+  isSubmitting = true;
+  repostSubmitBtn.disabled = true;
+  repostAnswerInput.disabled = true;
+  repostSubmitBtn.innerHTML = 'Kontrol ediliyor...';
+
+  socket.emit('submit-repost-answer', {
+    photoIndex: currentPhotoIndex,
+    answer: answer
+  });
+}
+
+socket.on('repost-answer-result', (data) => {
+  isSubmitting = false;
+  repostSubmitBtn.innerHTML = 'Cevapla';
+  
+  repostScore = data.currentScore;
+  repostCurrentScore.textContent = repostScore;
+  
+  repostFeedback.classList.remove('hidden', 'correct', 'wrong');
+  if (data.isCorrect) {
+    repostFeedback.classList.add('correct');
+    repostFeedback.textContent = '🎉 Doğru Bildin!';
+  } else {
+    repostFeedback.classList.add('wrong');
+    repostFeedback.textContent = `❌ Yanlış! Doğrusu: ${data.correctAnswer}`;
+  }
+  
+  repostNavButtons.classList.remove('hidden');
+  if (currentPhotoIndex === repostPhotos.length - 1) {
+    repostNextBtn.textContent = 'Testi Bitir ✓';
+    repostNextBtn.classList.remove('btn-blue');
+    repostNextBtn.classList.add('btn-green');
+  } else {
+    repostNextBtn.textContent = 'Sıradaki Fotoğraf →';
+    repostNextBtn.classList.add('btn-blue');
+    repostNextBtn.classList.remove('btn-green');
+  }
+});
+
+repostNextBtn.addEventListener('click', () => {
+  currentPhotoIndex++;
+  showRepostPhoto();
+});
+
+socket.on('repost-completed', (data) => {
+  repostFinalScore.textContent = data.score;
+  showScreen('repost-finish-screen');
+});
+
+socket.on('repost-player-finished', (data) => {
+  showToast(`${data.playerName} oyunu tamamladı! (${data.finishedCount}/${data.totalPlayers})`, 'success');
+  if (document.getElementById('repost-results-screen').classList.contains('active')) {
+    socket.emit('get-repost-results');
+  }
+});
+
+repostViewResultsBtn.addEventListener('click', () => {
+  socket.emit('get-repost-results');
+  showScreen('repost-results-screen');
+});
+
+socket.on('repost-results-data', (data) => {
+  renderRepostResults(data);
+});
+
+function renderRepostResults(data) {
+  const { results, photos, totalPhotos, finishedCount, totalPlayers } = data;
+
+  if (finishedCount === 0) {
+    repostResultsStatus.innerHTML = '⏳ Henüz kimse testi bitirmedi. Bekleniyor...';
+    repostResultsStatus.classList.add('waiting-results');
+  } else {
+    repostResultsStatus.innerHTML = `✅ ${finishedCount} / ${totalPlayers} oyuncu testi tamamladı`;
+    repostResultsStatus.classList.remove('waiting-results');
+  }
+
+  if (isOwner && finishedCount === totalPlayers && totalPlayers > 0) {
+    repostRestartBtn.classList.remove('hidden');
+  } else {
+    repostRestartBtn.classList.add('hidden');
+  }
+
+  if (results.length === 0) {
+    repostResultsList.innerHTML = `<div class="empty-state"><span class="empty-icon">⏳</span><p>Bekleniyor...</p></div>`;
+    return;
+  }
+
+  repostResultsList.innerHTML = results.map((r, index) => {
+    if (r.isFinished) {
+      const rankClass = index === 0 ? 'repost-rank-1' : index === 1 ? 'repost-rank-2' : index === 2 ? 'repost-rank-3' : 'repost-rank-default';
+      const crown = index === 0 ? '<div class="repost-result-crown">👑</div>' : '';
+      return `
+        <div class="repost-result-item ${index === 0 ? 'first-place' : ''}">
+          ${crown}
+          <div class="repost-result-rank ${rankClass}">${index + 1}</div>
+          <div class="repost-result-info">
+            <div class="repost-result-name">${escapeHtml(r.name)}</div>
+            <div class="repost-result-score-text">${r.score} Puan</div>
+          </div>
+          <button class="repost-view-btn" onclick="viewRepostAnswers('${r.id}')">Cevapları Gör</button>
+        </div>
+      `;
+    } else {
+      return `
+        <div class="repost-result-item" style="opacity: 0.6;">
+          <div class="repost-result-rank repost-rank-default">-</div>
+          <div class="repost-result-info">
+            <div class="repost-result-name">${escapeHtml(r.name)}</div>
+            <div class="repost-result-score-text">Hala test yapılıyor...</div>
+          </div>
+        </div>
+      `;
+    }
+  }).join('');
+
+  window._repostResultsData = data;
+}
+
+window.viewRepostAnswers = function(playerId) {
+  const data = window._repostResultsData;
+  if (!data) return;
+
+  const player = data.results.find(r => r.id === playerId);
+  if (!player) return;
+
+  repostAnswersModalTitle.textContent = `${player.name} - Cevaplar`;
+
+  repostAnswersList.innerHTML = data.photos.map((p, idx) => {
+    const ans = player.answers[idx];
+    const given = ans ? ans.given : '—';
+    const isCorrect = ans ? ans.correct : false;
+
+    return `
+      <div class="repost-answer-modal-item">
+        <div class="answer-num">${idx + 1}</div>
+        <img src="/photos/${p.file}" class="repost-answer-thumb" alt="Photo">
+        <div class="repost-answer-detail">
+          <div class="repost-answer-correct-label">Doğru Cevap:</div>
+          <div class="repost-answer-correct-name">${escapeHtml(p.answer)}</div>
+          <div class="repost-answer-given-label">Verilen Cevap:</div>
+          <div class="repost-answer-given-name ${isCorrect ? 'is-correct' : 'is-wrong'}">
+            ${escapeHtml(given)}
+          </div>
+        </div>
+        <div class="repost-answer-badge ${isCorrect ? 'correct-badge' : 'wrong-badge'}">
+          ${isCorrect ? 'Doğru' : 'Yanlış'}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  repostAnswersModal.classList.remove('hidden');
+};
+
+repostAnswersModalClose.addEventListener('click', () => {
+  repostAnswersModal.classList.add('hidden');
+});
+
+repostBackBtn.addEventListener('click', () => {
+  socket.emit('leave-room');
+  currentRoom = null;
+  isOwner = false;
+  showScreen('menu-screen');
+});
+
+repostRestartBtn.addEventListener('click', () => {
+  socket.emit('restart-game');
+});
+
 // ===== FINISH =====
 viewResultsBtn.addEventListener('click', () => {
   socket.emit('get-results');
@@ -570,6 +864,17 @@ socket.on('game-started', (data) => {
   resultsChatMessages.innerHTML = ''; // Yeni tur için sonuçlar sohbetini sıfırla
   startGame(data.questions);
   showToast('Oyun başladı!', 'success');
+});
+
+// Repost oyunu başladı
+socket.on('repost-game-started', (data) => {
+  resultsChatMessages.innerHTML = '';
+  repostPhotos = data.photos;
+  currentPhotoIndex = 0;
+  repostScore = 0;
+  repostTotalNum.textContent = repostPhotos.length;
+  showScreen('repost-welcome-screen');
+  showToast('Repost Bulmaca başladı!', 'success');
 });
 
 // Cevap kabul edildi

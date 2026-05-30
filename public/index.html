@@ -70,10 +70,15 @@
       <div class="form-group">
         <label>Oyun Türü</label>
         <div class="game-type-selector">
-          <div class="game-type-option selected">
+          <div class="game-type-option selected" data-type="quiz">
             <span class="game-icon">❓</span>
             <span class="game-name">Soru-Cevap</span>
             <span class="game-badge">20 Soru</span>
+          </div>
+          <div class="game-type-option" data-type="repost">
+            <span class="game-icon">📸</span>
+            <span class="game-name">Repost Bulmaca</span>
+            <span class="game-badge">18 Fotoğraf</span>
           </div>
         </div>
       </div>
@@ -172,6 +177,92 @@
         <div class="answer-buttons" style="justify-content: center;">
           <button id="skip-question-btn" class="btn btn-primary btn-full">Sonraki →</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REPOST EKRANLARI -->
+  
+  <!-- Repost Hoşgeldin -->
+  <div id="repost-welcome-screen" class="screen">
+    <div class="repost-welcome-screen">
+      <div class="repost-welcome-card" id="start-repost-btn">
+        <span class="repost-welcome-icon">📸</span>
+        <h2 class="repost-welcome-title">Repost Bulmaca Oyununa Hoşgeldin!</h2>
+        <p class="repost-welcome-desc">Bakalım kimin fotoğrafı olduğunu bulabilecek misin?</p>
+        <div class="repost-welcome-cta">
+          <span>Tıkla repostu gör</span>
+          <span>→</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Repost Oyun Ekranı -->
+  <div id="repost-game-screen" class="screen">
+    <div class="repost-game-container">
+      <div class="repost-header">
+        <div class="repost-counter">
+          Fotoğraf <span class="current-num" id="repost-current-num">1</span> / <span id="repost-total-num">18</span>
+        </div>
+        <div class="repost-progress-bar">
+          <div id="repost-progress-fill" class="repost-progress-fill"></div>
+        </div>
+      </div>
+      
+      <div class="repost-score-display">
+        Puan: <span class="score-num" id="repost-current-score">0</span>
+      </div>
+
+      <div class="repost-photo-card">
+        <div class="repost-photo-wrapper">
+          <span class="repost-photo-num" id="repost-photo-badge">#1</span>
+          <img id="repost-photo-img" src="" alt="Repost Photo">
+        </div>
+        
+        <div class="repost-answer-area">
+          <input type="text" id="repost-answer-input" placeholder="Kim bu? İsmini yaz..." autocomplete="off">
+          <button id="repost-submit-btn" class="btn btn-primary">Cevapla</button>
+        </div>
+        
+        <div id="repost-feedback" class="repost-feedback hidden"></div>
+        
+        <div class="repost-nav-buttons hidden" id="repost-nav-buttons">
+          <button id="repost-next-btn" class="btn btn-blue btn-full">Sıradaki Fotoğraf →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Repost Testi Bitirdin -->
+  <div id="repost-finish-screen" class="screen">
+    <div class="repost-finish-container">
+      <div class="repost-finish-emoji">🏆</div>
+      <h1 class="repost-finish-title">Oyun Bitti!</h1>
+      <p class="repost-finish-score">Toplam Puan: <strong id="repost-final-score">0</strong></p>
+      <button id="repost-view-results-btn" class="btn btn-primary btn-large-single">Sıralamayı Gör</button>
+    </div>
+  </div>
+
+  <!-- Repost Sonuçlar -->
+  <div id="repost-results-screen" class="screen">
+    <div class="repost-results-container">
+      <h2>👑 Puan Sıralaması</h2>
+      <div id="repost-results-status" class="results-status"></div>
+      <div id="repost-results-list" class="repost-results-list"></div>
+      
+      <button id="repost-restart-btn" class="btn btn-green btn-full hidden" style="margin-bottom: 10px;">🔄 Yeni Oyun Başlat</button>
+      <button id="repost-back-btn" class="btn btn-primary btn-full">Ana Menüye Dön</button>
+    </div>
+
+    <!-- Repost Cevaplar Modal -->
+    <div id="repost-answers-modal" class="modal hidden">
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h3 id="repost-answers-modal-title">Cevaplar</h3>
+          <button id="repost-answers-modal-close" class="modal-close-btn">✕</button>
+        </div>
+        <div id="repost-answers-list" class="answers-list"></div>
       </div>
     </div>
   </div>
