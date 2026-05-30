@@ -7,7 +7,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-const GROQ_API_KEY = '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';
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 // Sorular
 const questions = [
