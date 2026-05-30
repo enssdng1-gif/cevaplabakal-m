@@ -160,8 +160,9 @@
     <div class="game-container">
       <div class="game-header">
         <div class="question-counter">
-          Soru <span id="current-question-num">1</span> / <span id="total-questions">20</span>
+          Soru <span id="current-question-num">1</span> / <span id="total-questions">10</span>
         </div>
+        <span class="quiz-round-info" id="quiz-round-info"></span>
         <div class="progress-bar">
           <div id="progress-fill" class="progress-fill"></div>
         </div>
@@ -301,7 +302,26 @@
     </div>
   </div>
 
-  <!-- EKRAN 8: Testi Bitirdin -->
+  <!-- Quiz Tur Arası Bekleme ve Sohbet -->
+  <div id="quiz-waiting-screen" class="screen">
+    <div class="results-container">
+      <h2>⏳ Sıradaki Tur Bekleniyor...</h2>
+      <div id="quiz-waiting-status" class="results-status">Diğer oyuncuların bitirmesi bekleniyor...</div>
+      
+      <!-- Sohbet -->
+      <div class="chat-container">
+        <div class="chat-messages" id="quiz-chat-messages"></div>
+        <div class="chat-input-area">
+          <input type="text" id="quiz-chat-input" placeholder="Sohbet et..." autocomplete="off">
+          <button id="quiz-chat-send-btn" class="btn btn-primary btn-small">Gönder</button>
+        </div>
+      </div>
+
+      <button id="next-quiz-round-btn" class="btn btn-green btn-full hidden" style="margin-bottom: 10px;">Sonraki Oyuna Geç</button>
+    </div>
+  </div>
+
+  <!-- EKRAN 8: Testi Bitirdin (Tamamen) -->
   <div id="finish-screen" class="screen">
     <div class="finish-container">
       <div class="finish-animation">

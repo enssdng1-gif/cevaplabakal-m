@@ -56,11 +56,19 @@ const questionsRound2 = [
   { id: 40, question: "Herkesi yalayan, herkese yalakalık yapan kim?", answer: "" }
 ];
 
-function getQuestions(round) {
-  if (round === 2) {
-    return questionsRound2;
-  }
-  return questionsRound1;
+const allQuizQuestions = [...questionsRound1, ...questionsRound2];
+
+function startQuizRound(roomId, room) {
+  room.status = 'playing';
+  room.finishedPlayers = [];
+  room.gameQuestions = room.quizRounds[room.currentQuizRoundIndex];
+  
+  io.to(roomId).emit('game-started', {
+    questions: room.gameQuestions.map(q => ({ id: q.id, question: q.question })),
+    totalQuestions: allQuizQuestions.length,
+    roundIndex: room.currentQuizRoundIndex + 1,
+    totalRounds: room.quizRounds.length
+  });
 }
 
 // Repost Bulmaca - Fotoğraf veritabanı
@@ -376,12 +384,17 @@ io.on('connection', (socket) => {
       startRepostRound(currentRoom, room);
       console.log(`Repost Bulmaca başladı (Tur 1): ${currentRoom}`);
     } else {
-      // Normal quiz modu
-      room.gameQuestions = getQuestions(room.round);
-      io.to(currentRoom).emit('game-started', { 
-        questions: room.gameQuestions.map(q => ({ id: q.id, question: q.question }))
-      });
-      console.log(`Oyun başladı: ${currentRoom}`);
+      // Normal quiz modu - Turlu Sistem
+      const shuffledQs = shuffleArray(allQuizQuestions);
+      const chunks = [];
+      for (let i = 0; i < shuffledQs.length; i += 10) {
+        chunks.push(shuffledQs.slice(i, i + 10));
+      }
+      room.quizRounds = chunks;
+      room.currentQuizRoundIndex = 0;
+
+      startQuizRound(currentRoom, room);
+      console.log(`Quiz başladı (Tur 1): ${currentRoom}`);
     }
   });
 
@@ -426,15 +439,37 @@ io.on('connection', (socket) => {
       answers: room.playerAnswers[socket.id] || {}
     });
 
+    const isLastRound = room.currentQuizRoundIndex + 1 === room.quizRounds.length;
+    const allFinished = room.finishedPlayers.length === room.players.length;
+
     // Tüm odaya bildir
-    io.to(currentRoom).emit('player-finished', {
+    io.to(currentRoom).emit('quiz-player-finished', {
       playerId: socket.id,
       playerName: playerName,
       finishedCount: room.finishedPlayers.length,
-      totalPlayers: room.players.length
+      totalPlayers: room.players.length,
+      allFinished,
+      isLastRound
     });
 
-    socket.emit('quiz-completed', { message: 'Testi tamamladınız!' });
+    socket.emit('quiz-completed', { 
+      message: 'Turu tamamladınız!',
+      isLastRound,
+      allFinished
+    });
+  });
+
+  // Sonraki Quiz turuna geç
+  socket.on('next-quiz-round', () => {
+    if (!currentRoom) return;
+    const room = rooms.get(currentRoom);
+    if (!room || room.gameType !== 'quiz') return;
+    if (room.owner.id !== socket.id) return;
+
+    if (room.currentQuizRoundIndex + 1 < room.quizRounds.length) {
+      room.currentQuizRoundIndex++;
+      startQuizRound(currentRoom, room);
+    }
   });
 
   // ===== REPOST BULMACA EVENT'LERİ =====
@@ -605,16 +640,17 @@ io.on('connection', (socket) => {
       }
     });
 
-    // Doğru cevapları da gönder
+    // Doğru cevapları da gönder (Tüm turlardan)
+    const allQuestionsFlat = room.quizRounds.flat();
     const correctAnswers = {};
-    room.gameQuestions.forEach(q => {
+    allQuestionsFlat.forEach(q => {
       correctAnswers[q.id] = q.answer;
     });
 
     socket.emit('results-data', { 
       results, 
       correctAnswers,
-      questions: room.gameQuestions.map(q => ({ id: q.id, question: q.question })),
+      questions: allQuestionsFlat.map(q => ({ id: q.id, question: q.question })),
       totalPlayers: room.players.length,
       finishedCount: room.finishedPlayers.length
     });
@@ -681,22 +717,24 @@ io.on('connection', (socket) => {
       });
       console.log(`Repost Bulmaca yeniden başladı: ${currentRoom}`);
     } else {
-      room.round = room.round === 1 ? 2 : 1;
-      room.gameQuestions = getQuestions(room.round);
+      const shuffledQs = shuffleArray(allQuizQuestions);
+      const chunks = [];
+      for (let i = 0; i < shuffledQs.length; i += 10) {
+        chunks.push(shuffledQs.slice(i, i + 10));
+      }
+      room.quizRounds = chunks;
+      room.currentQuizRoundIndex = 0;
 
-      io.to(currentRoom).emit('game-started', { 
-        questions: room.gameQuestions.map(q => ({ id: q.id, question: q.question })),
-        isRestart: true
-      });
+      startQuizRound(currentRoom, room);
       
       io.to(currentRoom).emit('chat-message', {
         sender: 'Sistem',
         senderId: 'system',
-        message: `Oyun oda sahibi tarafından yeniden başlatıldı! ${room.round}. Tur başlıyor.`,
+        message: 'Oyun oda sahibi tarafından yeniden başlatıldı! Soru-Cevap başlıyor.',
         timestamp: Date.now(),
         isSystem: true
       });
-      console.log(`Oyun yeniden başladı (Tur ${room.round}): ${currentRoom}`);
+      console.log(`Oyun yeniden başladı (Tur 1): ${currentRoom}`);
     }
   });
 

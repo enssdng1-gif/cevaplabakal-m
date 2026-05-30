@@ -149,7 +149,17 @@ const resultsChatMessages = document.getElementById('results-chat-messages');
 const resultsChatInput = document.getElementById('results-chat-input');
 const resultsChatSendBtn = document.getElementById('results-chat-send-btn');
 
+const quizWaitingScreen = document.getElementById('quiz-waiting-screen');
+const quizWaitingStatus = document.getElementById('quiz-waiting-status');
+const quizChatMessages = document.getElementById('quiz-chat-messages');
+const quizChatInput = document.getElementById('quiz-chat-input');
+const quizChatSendBtn = document.getElementById('quiz-chat-send-btn');
+const nextQuizRoundBtn = document.getElementById('next-quiz-round-btn');
+
 const restartGameBtn = document.getElementById('restart-game-btn');
+
+let quizRoundIndex = 1;
+let quizTotalRounds = 1;
 
 // ===== HELPERS =====
 function showScreen(id, ignoreHistory = false) {
@@ -521,7 +531,6 @@ async function submitAnswer() {
 function finishQuiz() {
   progressFill.style.width = '100%';
   socket.emit('finish-quiz');
-  showScreen('finish-screen');
 }
 
 // ===== REPOST GAME LOGIC =====
@@ -921,9 +930,17 @@ socket.on('player-update', (data) => {
 
 // Oyun başladı
 socket.on('game-started', (data) => {
-  resultsChatMessages.innerHTML = ''; // Yeni tur için sonuçlar sohbetini sıfırla
+  quizRoundIndex = data.roundIndex || 1;
+  quizTotalRounds = data.totalRounds || 1;
+  
+  if (quizTotalRounds > 1) {
+    const roundInfoEl = document.getElementById('quiz-round-info');
+    if (roundInfoEl) roundInfoEl.textContent = `Tur ${quizRoundIndex} / ${quizTotalRounds}`;
+  }
+
+  resultsChatMessages.innerHTML = ''; 
   startGame(data.questions);
-  showToast('Oyun başladı!', 'success');
+  showToast(`Soru-Cevap Tur ${quizRoundIndex} başladı!`, 'success');
 });
 
 // Repost oyunu başladı (her tur için tetiklenir)
@@ -1000,17 +1017,38 @@ socket.on('answer-rejected', (data) => {
 });
 
 // Oyuncu testi bitirdi
-socket.on('player-finished', (data) => {
+socket.on('quiz-player-finished', (data) => {
   showToast(`${data.playerName} testi tamamladı! (${data.finishedCount}/${data.totalPlayers})`, 'success');
-  // Sonuçlar ekranındaysak listeyi anlık yenile
+  
+  if (document.getElementById('quiz-waiting-screen').classList.contains('active')) {
+    quizWaitingStatus.textContent = `${data.finishedCount} / ${data.totalPlayers} oyuncu turu tamamladı`;
+    
+    if (data.allFinished) {
+      if (data.isLastRound) {
+        showScreen('finish-screen');
+      } else {
+        quizWaitingStatus.textContent = '✅ Herkes tamamladı! Sıradaki tura geçilebilir.';
+        if (isOwner) {
+          nextQuizRoundBtn.classList.remove('hidden');
+        }
+      }
+    }
+  }
+
   if (document.getElementById('results-screen').classList.contains('active')) {
     socket.emit('get-results');
   }
 });
 
 // Quiz tamamlandı
-socket.on('quiz-completed', () => {
-  // Finish ekranına geçiş zaten finishQuiz() tarafından yapıldı
+socket.on('quiz-completed', (data) => {
+  if (data.isLastRound) {
+    showScreen('finish-screen');
+  } else {
+    quizWaitingStatus.textContent = 'Diğer oyuncuların bitirmesi bekleniyor...';
+    nextQuizRoundBtn.classList.add('hidden');
+    showScreen('quiz-waiting-screen');
+  }
 });
 
 // Oda listesi
@@ -1066,6 +1104,7 @@ function clearChat() {
   lobbyChatMessages.innerHTML = '';
   resultsChatMessages.innerHTML = '';
   repostChatMessages.innerHTML = '';
+  quizChatMessages.innerHTML = '';
 }
 
 function sendChatMessage(inputEl) {
@@ -1084,6 +1123,16 @@ resultsChatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') se
 repostChatSendBtn.addEventListener('click', () => sendChatMessage(repostChatInput));
 repostChatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChatMessage(repostChatInput); });
 
+quizChatSendBtn.addEventListener('click', () => sendChatMessage(quizChatInput));
+quizChatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChatMessage(quizChatInput); });
+
+// Sonraki quiz turuna geç butonu
+nextQuizRoundBtn.addEventListener('click', () => {
+  socket.emit('next-quiz-round');
+  nextQuizRoundBtn.classList.add('hidden');
+  quizWaitingStatus.textContent = 'Sıradaki tur başlatılıyor...';
+});
+
 // Sonraki tura geç butonu (sadece oda sahibi)
 repostNextRoundBtn.addEventListener('click', () => {
   socket.emit('next-repost-round');
@@ -1101,10 +1150,12 @@ socket.on('chat-message', (data) => {
   lobbyChatMessages.insertAdjacentHTML('beforeend', msgHTML);
   resultsChatMessages.insertAdjacentHTML('beforeend', msgHTML);
   repostChatMessages.insertAdjacentHTML('beforeend', msgHTML);
+  quizChatMessages.insertAdjacentHTML('beforeend', msgHTML);
   
   lobbyChatMessages.scrollTop = lobbyChatMessages.scrollHeight;
   resultsChatMessages.scrollTop = resultsChatMessages.scrollHeight;
   repostChatMessages.scrollTop = repostChatMessages.scrollHeight;
+  quizChatMessages.scrollTop = quizChatMessages.scrollHeight;
 });
 
 restartGameBtn.addEventListener('click', () => {

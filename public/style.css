@@ -2565,7 +2565,7 @@ input[type="password"]::placeholder {
 }
 
 /* Round Info */
-.repost-round-info {
+.repost-round-info, .quiz-round-info {
   display: block;
   text-align: center;
   font-size: 0.9rem;
