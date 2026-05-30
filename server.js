@@ -276,12 +276,26 @@ io.on('connection', (socket) => {
     const room = rooms.get(currentRoom);
     if (!room) return;
 
-    const results = room.finishedPlayers.map(p => ({
-      id: p.id,
-      name: p.name,
-      answers: p.answers,
-      finishTime: p.finishTime
-    }));
+    const results = room.players.map(p => {
+      const finished = room.finishedPlayers.find(fp => fp.id === p.id);
+      if (finished) {
+        return {
+          id: p.id,
+          name: p.name,
+          isFinished: true,
+          answers: finished.answers,
+          finishTime: finished.finishTime
+        };
+      } else {
+        return {
+          id: p.id,
+          name: p.name,
+          isFinished: false,
+          answers: room.playerAnswers[p.id] || {},
+          finishTime: null
+        };
+      }
+    });
 
     // Doğru cevapları da gönder
     const correctAnswers = {};

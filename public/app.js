@@ -462,22 +462,35 @@ function renderResults(data) {
     return;
   }
 
-  // Sadece bitirme zamanına göre sırala
-  const sortedResults = [...results].sort((a, b) => a.finishTime - b.finishTime);
+  // Bitenleri ve bitirmeyenleri ayır
+  const finished = results.filter(r => r.isFinished).sort((a, b) => a.finishTime - b.finishTime);
+  const unfinished = results.filter(r => !r.isFinished);
+  const allSorted = [...finished, ...unfinished];
 
-  resultsList.innerHTML = sortedResults.map((r, index) => {
-    const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : 'rank-default';
-    
-    return `
-      <div class="result-item">
-        <div class="result-rank ${rankClass}">${index + 1}</div>
-        <div class="result-info">
-          <div class="result-name">${escapeHtml(r.name)}</div>
-          <div class="result-score">Testi Tamamladı</div>
+  resultsList.innerHTML = allSorted.map((r, index) => {
+    if (r.isFinished) {
+      const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : 'rank-default';
+      return `
+        <div class="result-item">
+          <div class="result-rank ${rankClass}">${index + 1}</div>
+          <div class="result-info">
+            <div class="result-name">${escapeHtml(r.name)}</div>
+            <div class="result-score">Testi Tamamladı</div>
+          </div>
+          <button class="view-answers-btn" onclick="viewAnswers('${r.id}')">Cevapları Gör</button>
         </div>
-        <button class="view-answers-btn" onclick="viewAnswers('${r.id}')">Cevapları Gör</button>
-      </div>
-    `;
+      `;
+    } else {
+      return `
+        <div class="result-item" style="opacity: 0.6;">
+          <div class="result-rank rank-default">-</div>
+          <div class="result-info">
+            <div class="result-name">${escapeHtml(r.name)}</div>
+            <div class="result-score">Hala test yapılıyor...</div>
+          </div>
+        </div>
+      `;
+    }
   }).join('');
 
   // Store for modal
@@ -554,6 +567,7 @@ socket.on('player-update', (data) => {
 
 // Oyun başladı
 socket.on('game-started', (data) => {
+  resultsChatMessages.innerHTML = ''; // Yeni tur için sonuçlar sohbetini sıfırla
   startGame(data.questions);
   showToast('Oyun başladı!', 'success');
 });
@@ -607,6 +621,10 @@ socket.on('answer-rejected', (data) => {
 // Oyuncu testi bitirdi
 socket.on('player-finished', (data) => {
   showToast(`${data.playerName} testi tamamladı! (${data.finishedCount}/${data.totalPlayers})`, 'success');
+  // Sonuçlar ekranındaysak listeyi anlık yenile
+  if (document.getElementById('results-screen').classList.contains('active')) {
+    socket.emit('get-results');
+  }
 });
 
 // Quiz tamamlandı
