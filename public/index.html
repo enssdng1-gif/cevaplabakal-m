@@ -40,6 +40,14 @@
         <p class="menu-subtitle" id="player-greeting"></p>
       </div>
       <div class="menu-buttons">
+        <div class="menu-row-buttons" style="display: flex; gap: 10px; margin-bottom: 10px;">
+          <button id="my-profile-btn" class="btn btn-primary" style="flex: 1;">
+            <span class="btn-icon">👤</span> Profilim
+          </button>
+          <button id="my-friends-btn" class="btn btn-secondary" style="flex: 1;">
+            <span class="btn-icon">🧑‍🤝‍🧑</span> Arkadaşlar
+          </button>
+        </div>
         <button id="create-room-btn" class="btn btn-large btn-blue">
           <span class="btn-icon">🏠</span>
           <span class="btn-label">Oda Oluştur</span>
@@ -488,6 +496,120 @@
       
       <button id="describe-restart-btn" class="btn btn-green btn-full hidden" style="margin-bottom: 10px;">🔄 Yeni Oyun Başlat</button>
       <button id="describe-back-btn" class="btn btn-primary btn-full">Ana Menüye Dön</button>
+    </div>
+  </div>
+
+  <!-- =============================== -->
+  <!-- YENİ PROFİL VE ARKADAŞLIK EKRANLARI (MODALLAR) -->
+  <!-- =============================== -->
+
+  <!-- Yenilikler (Sürüm Notları) Modalı -->
+  <div id="whats-new-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 500px;">
+      <h3 style="font-size: 1.6rem; margin-bottom: 15px; color: #a78bfa; text-align: center;">🚀 Neler Yeni? (v2.0)</h3>
+      <div style="font-size: 0.95rem; line-height: 1.6; color: var(--text-primary); margin-bottom: 20px; max-height: 60vh; overflow-y: auto; text-align: left;">
+        <ul style="padding-left: 20px; display: flex; flex-direction: column; gap: 10px;">
+          <li><strong>👤 Kişisel Profil & ID:</strong> Artık sana özel 6 haneli sabit bir ID'n var. Profilini dilediğin gibi özelleştirebilirsin!</li>
+          <li><strong>🧑‍🤝‍🧑 Arkadaşlık Sistemi:</strong> Arkadaşlarını ID'leri ile ekleyebilir, çevrimiçiyken şifresiz odalarına tek tuşla katılabilirsin!</li>
+          <li><strong>🏆 Başarılar & Rozetler:</strong> Oyunda gösterdiğin performansa göre eğlenceli başarılar açabilir, bu rozetleri profiline sabitleyebilirsin!</li>
+          <li><strong>🖼️ Avatar Özelliği:</strong> Kendi fotoğrafını yükleyebilir veya hazır avatarlardan birini seçebilirsin!</li>
+        </ul>
+      </div>
+      <button id="whats-new-ok-btn" class="btn btn-primary btn-full">Harika, Anladım!</button>
+    </div>
+  </div>
+
+  <!-- Profilim Modalı -->
+  <div id="profile-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 450px; text-align: center;">
+      <button class="modal-close-btn" id="profile-close-btn">×</button>
+      <h3 style="margin-bottom: 10px;">👤 Profilim</h3>
+      <div style="margin-bottom: 15px; background: rgba(59, 130, 246, 0.1); padding: 8px; border-radius: 8px; color: var(--text-secondary); font-family: monospace; font-size: 1.1rem; letter-spacing: 2px;">
+        ID: <strong id="my-profile-id" style="color: var(--blue);">------</strong>
+      </div>
+      
+      <div class="avatar-selector">
+        <label style="display: block; text-align: left; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-secondary);">Avatarın:</label>
+        <div class="avatar-grid" id="avatar-grid">
+          <div class="avatar-option" data-avatar="👦">👦</div>
+          <div class="avatar-option" data-avatar="👧">👧</div>
+          <div class="avatar-option" data-avatar="🧔">🧔</div>
+          <div class="avatar-option" data-avatar="👩‍🦰">👩‍🦰</div>
+          <div class="avatar-option" data-avatar="👽">👽</div>
+          <div class="avatar-option custom-avatar-btn" id="custom-avatar-btn" title="Kendi fotoğrafını yükle">📷+</div>
+        </div>
+        <input type="file" id="custom-avatar-input" accept="image/*" style="display: none;">
+      </div>
+      
+      <div class="form-group" style="margin-top: 15px; text-align: left;">
+        <label>İsmin:</label>
+        <input type="text" id="my-profile-name" maxlength="20" autocomplete="off">
+      </div>
+      
+      <div class="profile-badges-section" style="margin-top: 20px; text-align: left;">
+        <label style="display: block; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-secondary);">🏆 Kazanılan Rozetler:</label>
+        <div id="my-profile-badges" class="badges-grid">
+          <!-- Dinamik rozetler -->
+          <div style="color: var(--text-hint); font-size: 0.85rem; width: 100%;">Henüz rozet kazanılmadı. Oyun oynayarak kazanabilirsin!</div>
+        </div>
+      </div>
+      
+      <button id="profile-save-btn" class="btn btn-green btn-full" style="margin-top: 20px;">Kaydet ve Kapat</button>
+    </div>
+  </div>
+
+  <!-- Arkadaşlar Modalı -->
+  <div id="friends-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 500px; text-align: left;">
+      <button class="modal-close-btn" id="friends-close-btn">×</button>
+      <h3 style="margin-bottom: 20px;">🧑‍🤝‍🧑 Arkadaşlar</h3>
+      
+      <!-- Arkadaş Ekle -->
+      <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <input type="text" id="add-friend-id" placeholder="Arkadaşının 6 Haneli ID'si" maxlength="6" style="flex: 1; text-transform: uppercase;">
+        <button id="add-friend-btn" class="btn btn-blue">Ekle</button>
+      </div>
+
+      <!-- Gelen İstekler -->
+      <div id="friend-requests-container" class="hidden" style="margin-bottom: 20px;">
+        <h4 style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px;">Gelen İstekler</h4>
+        <div id="friend-requests-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+      </div>
+
+      <!-- Arkadaş Listesi -->
+      <h4 style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px;">Arkadaşların</h4>
+      <div id="friends-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto;">
+        <div style="color: var(--text-hint); text-align: center; padding: 20px;">Listen şu an boş.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Başkasının Profilini Görüntüleme Modalı -->
+  <div id="public-profile-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <button class="modal-close-btn" id="public-profile-close-btn">×</button>
+      
+      <div id="public-profile-avatar-container" class="public-avatar-container">
+        <div id="public-profile-avatar" class="public-avatar">👦</div>
+      </div>
+      <h3 id="public-profile-name" style="margin: 15px 0 5px;">İsim</h3>
+      <div style="color: var(--text-hint); font-size: 0.85rem; margin-bottom: 20px;">ID: <span id="public-profile-id">---</span></div>
+      
+      <div class="profile-badges-section" style="text-align: left;">
+        <label style="display: block; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-secondary);">🏆 Rozetler:</label>
+        <div id="public-profile-badges" class="badges-grid"></div>
+      </div>
+      
+      <button id="public-profile-add-btn" class="btn btn-blue btn-full hidden" style="margin-top: 20px;">Arkadaş Ekle</button>
+    </div>
+  </div>
+
+  <!-- Başarım Animasyonlu Toast Bildirimi -->
+  <div id="achievement-toast" class="achievement-toast hidden">
+    <div class="ach-icon">🏆</div>
+    <div class="ach-info">
+      <div class="ach-title">Başarım Açıldı!</div>
+      <div class="ach-name" id="ach-toast-name">B-12 Bağışıklığı</div>
     </div>
   </div>
 

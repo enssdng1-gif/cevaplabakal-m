@@ -246,8 +246,10 @@ function shuffleArray(arr) {
   return shuffled;
 }
 
-// Oda yönetimi
+// Oda ve Kullanıcı Yönetimi
 const rooms = new Map();
+const globalUsers = new Map(); // socket.id -> userData
+const userIndex = new Map(); // userId -> socket.id
 
 // Groq API ile cevap doğrulama (İptal edildi, arkadaşlar arası olduğu için sadece basit doğrulama)
 async function validateAnswer(answer, playerName) {
@@ -327,9 +329,67 @@ io.on('connection', (socket) => {
   let currentRoom = null;
   let playerName = '';
 
-  // İsim ayarla
+  // İsim ayarla (Eski uyumluluk)
   socket.on('set-name', (name) => {
     playerName = name;
+  });
+
+  // Profil ile giriş yap
+  socket.on('login', (userData) => {
+    playerName = userData.name;
+    globalUsers.set(socket.id, userData);
+    userIndex.set(userData.id, socket.id);
+    console.log(`Profil giriş: ${userData.name} (${userData.id})`);
+  });
+
+  socket.on('update-profile', (userData) => {
+    playerName = userData.name;
+    globalUsers.set(socket.id, userData);
+  });
+
+  socket.on('send-friend-request', (data) => {
+    const targetSocketId = userIndex.get(data.targetId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('friend-request-received', { sender: data.sender });
+    }
+  });
+
+  socket.on('accept-friend-request', (data) => {
+    const targetSocketId = userIndex.get(data.targetId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('friend-request-accepted', { targetId: data.sender.id, targetName: data.sender.name });
+    }
+  });
+
+  socket.on('get-friends-status', (friendIds) => {
+    const friendsData = [];
+    friendIds.forEach(fid => {
+      const sockId = userIndex.get(fid);
+      if (sockId && globalUsers.has(sockId)) {
+        const u = globalUsers.get(sockId);
+        let userRoomId = null;
+        let roomHasPassword = false;
+        rooms.forEach((r) => {
+          if (r.players.find(p => p.id === sockId)) {
+            userRoomId = r.id;
+            roomHasPassword = r.hasPassword;
+          }
+        });
+        friendsData.push({ id: u.id, name: u.name, avatar: u.avatar, isOnline: true, roomId: userRoomId, roomHasPassword });
+      } else {
+        friendsData.push({ id: fid, name: 'Çevrimdışı', avatar: '👤', isOnline: false, roomId: null, roomHasPassword: false });
+      }
+    });
+    socket.emit('friends-status-data', { friendsData });
+  });
+
+  socket.on('get-profile', (userId) => {
+    const sockId = userIndex.get(userId);
+    if (sockId && globalUsers.has(sockId)) {
+      socket.emit('profile-data', { profile: globalUsers.get(sockId) });
+    } else {
+      socket.emit('profile-data', { profile: null });
+    }
   });
 
   // Oda oluştur
@@ -757,10 +817,14 @@ io.on('connection', (socket) => {
       }
     }
 
+    const senderData = globalUsers.get(socket.id);
+    const userId = senderData ? senderData.id : socket.id;
+
     // Mesajı odadaki herkese gönder
     io.to(currentRoom).emit('chat-message', {
       sender: playerName,
       senderId: socket.id,
+      userId: userId,
       message: data.message,
       timestamp: Date.now()
     });
@@ -1018,6 +1082,11 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log(`Ayrıldı: ${socket.id}`);
     leaveCurrentRoom(socket);
+    if (globalUsers.has(socket.id)) {
+      const u = globalUsers.get(socket.id);
+      userIndex.delete(u.id);
+      globalUsers.delete(socket.id);
+    }
   });
 
   function leaveCurrentRoom(sock) {
