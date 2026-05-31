@@ -941,17 +941,8 @@ io.on('connection', (socket) => {
 
     io.to(currentRoom).emit('describe-scores-update', { scores, guessStatus });
 
-    // Herkes DOĞRU bildiyse süreyi bitir
-    const correctGuessers = room.describeGuessers.filter(g => g.isCorrect);
-    const nonDescriberCount = room.players.length - 1;
-    if (correctGuessers.length >= nonDescriberCount) {
-      if (room.describeTimer) {
-        clearInterval(room.describeTimer);
-        room.describeTimer = null;
-      }
-      // Küçük gecikme ile bitir (animasyonlar için)
-      setTimeout(() => endDescribeTurn(currentRoom, room), 1500);
-    }
+    // Herkes DOĞRU bilse bile sürenin bitmesini bekle
+    // Önceden burada süreyi erken bitiren kod vardı, kullanıcı isteği üzerine kaldırıldı.
   });
 
   // Sonuçları getir
