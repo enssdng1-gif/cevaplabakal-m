@@ -280,7 +280,7 @@ function balancePhotos(photos, maxLimit = 80) {
   if (photos.length <= maxLimit) return shuffleArray(photos);
 
   const groups = {};
-  photos.forEach(p => {
+  shuffleArray(photos).forEach(p => {
     const key = p.answer.toLowerCase();
     if (!groups[key]) groups[key] = [];
     groups[key].push(p);
@@ -889,14 +889,18 @@ io.on('connection', (socket) => {
     // Tanıtıcı kendisi tahmin edemez
     if (describer.id === socket.id) return;
 
-    // Zaten tahmin ettiyse
-    if (room.describeGuessers.find(g => g.id === socket.id)) {
-      return socket.emit('describe-guess-locked', { message: 'Zaten tahmin hakkınızı kullandınız!' });
+    // Eğer önceden DOĞRU bildiyse kilitli
+    const previousCorrect = room.describeGuessers.find(g => g.id === socket.id && g.isCorrect);
+    if (previousCorrect) {
+      return socket.emit('describe-guess-locked', { message: 'Zaten doğru tahmin ettiniz, beklemede kalın!' });
     }
 
     const guess = (data.guess || '').trim().toLowerCase();
     const correctAnswer = (room.describeTarget || '').toLowerCase();
     const isCorrect = guess === correctAnswer;
+
+    // Önceki tahminini çıkar
+    room.describeGuessers = room.describeGuessers.filter(g => g.id !== socket.id);
 
     room.describeGuessers.push({
       id: socket.id,
@@ -909,8 +913,8 @@ io.on('connection', (socket) => {
       const order = room.describeCorrectCount;
       let points = 1;
       if (order === 1) points = 5;
-      else if (order === 2) points = 3;
-      else if (order === 3) points = 2;
+      else if (order === 2) points = 4;
+      else if (order === 3) points = 3;
 
       room.playerScores[socket.id] = (room.playerScores[socket.id] || 0) + points;
     }
@@ -918,7 +922,7 @@ io.on('connection', (socket) => {
     // Tahmin sonucunu sadece tahmin edene gönder
     socket.emit('describe-guess-result', {
       isCorrect,
-      correctAnswer: room.describeTarget,
+      correctAnswer: isCorrect ? room.describeTarget : null,
       guess: data.guess
     });
 
@@ -937,9 +941,10 @@ io.on('connection', (socket) => {
 
     io.to(currentRoom).emit('describe-scores-update', { scores, guessStatus });
 
-    // Herkes tahmin ettiyse süreyi bitir
+    // Herkes DOĞRU bildiyse süreyi bitir
+    const correctGuessers = room.describeGuessers.filter(g => g.isCorrect);
     const nonDescriberCount = room.players.length - 1;
-    if (room.describeGuessers.length >= nonDescriberCount) {
+    if (correctGuessers.length >= nonDescriberCount) {
       if (room.describeTimer) {
         clearInterval(room.describeTimer);
         room.describeTimer = null;

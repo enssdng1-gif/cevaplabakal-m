@@ -81,10 +81,7 @@ html, body {
 .welcome-title {
   font-size: clamp(2.5rem, 8vw, 5rem);
   font-weight: 800;
-  background: linear-gradient(135deg, var(--blue), var(--green));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--blue);
   opacity: 0;
   transform: translateX(-80px);
   animation: slideInRight 1s ease forwards;
@@ -267,21 +264,21 @@ input[type="password"]::placeholder {
 }
 
 .btn-blue {
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  background: var(--blue);
   color: var(--white);
 }
 
 .btn-blue:hover {
-  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  background: var(--blue-hover);
 }
 
 .btn-green {
-  background: linear-gradient(135deg, #059669, #10b981);
+  background: var(--green);
   color: var(--white);
 }
 
 .btn-green:hover {
-  background: linear-gradient(135deg, #047857, #059669);
+  background: var(--green-hover);
 }
 
 .btn-red {
@@ -381,10 +378,7 @@ input[type="password"]::placeholder {
 .logo-text {
   font-size: 2.5rem;
   font-weight: 800;
-  background: linear-gradient(135deg, var(--blue), var(--green));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--blue);
   letter-spacing: -1px;
   animation: scaleIn 0.5s ease;
 }
@@ -872,7 +866,7 @@ input[type="password"]::placeholder {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--blue), var(--green));
+  background: var(--blue);
   border-radius: 3px;
   transition: width 0.5s ease;
   width: 0%;
@@ -964,10 +958,7 @@ input[type="password"]::placeholder {
   font-size: 2rem;
   font-weight: 800;
   margin-bottom: 12px;
-  background: linear-gradient(135deg, var(--green), var(--blue));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--green);
 }
 
 .finish-desc {
@@ -1043,9 +1034,9 @@ input[type="password"]::placeholder {
   flex-shrink: 0;
 }
 
-.rank-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #1a1a2e; }
-.rank-2 { background: linear-gradient(135deg, #94a3b8, #64748b); color: #1a1a2e; }
-.rank-3 { background: linear-gradient(135deg, #cd7f32, #a0522d); color: #fff; }
+.rank-1 { background: #f59e0b; color: #1a1a2e; }
+.rank-2 { background: #64748b; color: #1a1a2e; }
+.rank-3 { background: #a0522d; color: #fff; }
 .rank-default { background: var(--bg-input); color: var(--text-secondary); border: 1px solid var(--border-color); }
 
 .result-info {
@@ -1939,7 +1930,7 @@ input[type="password"]::placeholder {
 }
 
 .repost-welcome-card {
-  background: linear-gradient(145deg, #1a1a3e, #2a1a4e);
+  background: #1a1a3e;
   border: 2px solid rgba(139, 92, 246, 0.4);
   border-radius: var(--radius-xl);
   padding: 48px 40px;
@@ -1948,7 +1939,7 @@ input[type="password"]::placeholder {
   text-align: center;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 0 8px 40px rgba(139, 92, 246, 0.2), inset 0 1px 0 rgba(255,255,255,0.05);
+  box-shadow: 0 8px 40px rgba(139, 92, 246, 0.2);
   position: relative;
   overflow: hidden;
   animation: scaleIn 0.6s ease;
@@ -1958,8 +1949,7 @@ input[type="password"]::placeholder {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 30% 20%, rgba(139, 92, 246, 0.15), transparent 60%),
-              radial-gradient(circle at 70% 80%, rgba(59, 130, 246, 0.1), transparent 50%);
+  background: transparent;
   pointer-events: none;
 }
 
@@ -1984,10 +1974,7 @@ input[type="password"]::placeholder {
   font-size: 1.6rem;
   font-weight: 800;
   margin-bottom: 12px;
-  background: linear-gradient(135deg, #a78bfa, #60a5fa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #a78bfa;
 }
 
 .repost-welcome-desc {
@@ -2002,7 +1989,7 @@ input[type="password"]::placeholder {
   align-items: center;
   gap: 8px;
   padding: 12px 28px;
-  background: linear-gradient(135deg, #7c3aed, #3b82f6);
+  background: #7c3aed;
   border-radius: 50px;
   color: white;
   font-weight: 700;
@@ -2116,7 +2103,7 @@ input[type="password"]::placeholder {
 
 .repost-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #7c3aed, #a78bfa);
+  background: #7c3aed;
   border-radius: 3px;
   transition: width 0.5s ease;
   width: 0%;
@@ -2181,7 +2168,7 @@ input[type="password"]::placeholder {
 }
 
 .repost-flip-front {
-  background: linear-gradient(135deg, #1a1a3e, #2a1a4e);
+  background: #1a1a3e;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2299,10 +2286,7 @@ input[type="password"]::placeholder {
   font-size: 2rem;
   font-weight: 800;
   margin: 16px 0 8px;
-  background: linear-gradient(135deg, #a78bfa, #60a5fa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #a78bfa;
 }
 
 .repost-finish-score {
@@ -2328,10 +2312,7 @@ input[type="password"]::placeholder {
   font-weight: 700;
   margin-bottom: 20px;
   text-align: center;
-  background: linear-gradient(135deg, #a78bfa, #60a5fa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #a78bfa;
 }
 
 .repost-results-list {
@@ -2362,7 +2343,7 @@ input[type="password"]::placeholder {
 
 .repost-result-item.first-place {
   border-color: rgba(251, 191, 36, 0.4);
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.05), rgba(245, 158, 11, 0.02));
+  background: rgba(251, 191, 36, 0.05);
 }
 
 .repost-result-crown {
@@ -2387,9 +2368,9 @@ input[type="password"]::placeholder {
   flex-shrink: 0;
 }
 
-.repost-rank-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #1a1a2e; }
-.repost-rank-2 { background: linear-gradient(135deg, #94a3b8, #64748b); color: #1a1a2e; }
-.repost-rank-3 { background: linear-gradient(135deg, #cd7f32, #a0522d); color: #fff; }
+.repost-rank-1 { background: #f59e0b; color: #1a1a2e; }
+.repost-rank-2 { background: #64748b; color: #1a1a2e; }
+.repost-rank-3 { background: #a0522d; color: #fff; }
 .repost-rank-default { background: var(--bg-input); color: var(--text-secondary); border: 1px solid var(--border-color); }
 
 .repost-result-info {
@@ -2731,26 +2712,26 @@ input[type="password"]::placeholder {
   font-size: 1.4rem;
   font-weight: 900;
   color: white;
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: var(--green);
   box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
   transition: all 0.3s ease;
   animation: pulse 1s ease-in-out infinite;
 }
 
 .timer-circle.warning {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
+  background: var(--yellow);
   box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
 }
 
 .timer-circle.danger {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
+  background: var(--red);
   box-shadow: 0 0 25px rgba(239, 68, 68, 0.6);
   animation: pulse 0.5s ease-in-out infinite;
 }
 
 /* Description Card */
 .describe-card {
-  background: linear-gradient(145deg, #1a1a3e, #2a1a4e);
+  background: #1a1a3e;
   border: 2px solid rgba(139, 92, 246, 0.3);
   border-radius: var(--radius-xl);
   padding: 28px 24px;

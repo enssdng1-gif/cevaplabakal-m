@@ -1394,15 +1394,21 @@ socket.on('describe-timer-tick', (data) => {
   }
 });
 
-// Tahmin sonucu
 socket.on('describe-guess-result', (data) => {
   describeFeedback.classList.remove('hidden');
   if (data.isCorrect) {
     describeFeedback.textContent = '🎉 Doğru Bildin!';
     describeFeedback.className = 'answer-feedback success';
+    describeGuessInput.disabled = true;
+    describeGuessSubmitBtn.disabled = true;
   } else {
-    describeFeedback.textContent = `❌ Yanlış! Doğrusu: ${data.correctAnswer}`;
+    describeFeedback.textContent = `❌ Yanlış tahmin, tekrar dene!`;
     describeFeedback.className = 'answer-feedback error';
+    describeGuessInput.disabled = false;
+    describeGuessSubmitBtn.disabled = false;
+    describeGuessSubmitBtn.textContent = 'Tahmin Et';
+    describeGuessInput.value = '';
+    describeGuessInput.focus();
   }
 });
 
@@ -1454,8 +1460,27 @@ socket.on('describe-results-data', (data) => {
 
 // Chat mesajlarını describe ekranlarına da yolla
 (function patchChatForDescribe() {
-  const originalHandler = socket._callbacks['$chat-message'];
-  // chat-message z.a. önceki handler'da dinleniyor, biz ekliyoruz:
+  socket.on('chat-message', (data) => {
+    const msgHTML = `
+      <div class="chat-message ${data.isSystem ? 'system-msg' : ''}">
+        <span class="sender">${escapeHtml(data.sender)}${data.isSystem ? '' : ':'}</span>
+        <span class="text">${escapeHtml(data.message)}</span>
+      </div>
+    `;
+    lobbyChatMessages.insertAdjacentHTML('beforeend', msgHTML);
+    resultsChatMessages.insertAdjacentHTML('beforeend', msgHTML);
+    repostChatMessages.insertAdjacentHTML('beforeend', msgHTML);
+    quizChatMessages.insertAdjacentHTML('beforeend', msgHTML);
+    describeWaitingChatMessages.insertAdjacentHTML('beforeend', msgHTML);
+    describeGuessingChatMessages.insertAdjacentHTML('beforeend', msgHTML);
+    
+    lobbyChatMessages.scrollTop = lobbyChatMessages.scrollHeight;
+    resultsChatMessages.scrollTop = resultsChatMessages.scrollHeight;
+    repostChatMessages.scrollTop = repostChatMessages.scrollHeight;
+    quizChatMessages.scrollTop = quizChatMessages.scrollHeight;
+    describeWaitingChatMessages.scrollTop = describeWaitingChatMessages.scrollHeight;
+    describeGuessingChatMessages.scrollTop = describeGuessingChatMessages.scrollHeight;
+  });
 })();
 
 
